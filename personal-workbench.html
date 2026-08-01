@@ -276,6 +276,97 @@
       line-height: 1.5;
       text-align: center;
     }
+    /* ===== 语音输入按钮 ===== */
+    .voice-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--rule);
+      border-radius: 50%;
+      background: var(--surface);
+      color: var(--pink-deep);
+      font-size: 1rem;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform .15s ease, box-shadow .15s ease;
+      vertical-align: middle;
+    }
+    .voice-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px var(--shadow-soft);
+    }
+    .voice-btn.recording {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--pink-deep);
+      animation: voice-pulse 1.2s ease-in-out infinite;
+    }
+    @keyframes voice-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(200, 108, 145, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(200, 108, 145, 0); }
+    }
+    .voice-input-wrap {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .voice-input-wrap textarea,
+    .voice-input-wrap input {
+      flex: 1;
+      min-width: 0;
+    }
+    /* quick-capture 里的语音按钮适配 */
+    .quick-capture .voice-input-wrap {
+      width: 100%;
+      align-items: center;
+      padding-right: 4px;
+    }
+    .quick-capture .voice-btn {
+      width: 28px;
+      height: 28px;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+    /* longterm-toolbar 和 focus-input-row 里的适配 */
+    .longterm-toolbar .voice-input-wrap,
+    .focus-input-row .voice-input-wrap {
+      min-width: 0;
+    }
+    .voice-status {
+      font-size: 0.7rem;
+      color: var(--pink-deep);
+      padding: 4px 8px;
+      background: var(--pink-light);
+      border-radius: 8px;
+      display: none;
+    }
+    .voice-status.show { display: inline-block; }
+    /* ===== 语音语言切换 ===== */
+    .voice-lang-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border: 1px solid var(--rule);
+      border-radius: 20px;
+      background: var(--surface);
+      color: var(--pink-deep);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all .15s ease;
+      white-space: nowrap;
+    }
+    .voice-lang-toggle:hover {
+      border-color: var(--pink-deep);
+      box-shadow: 0 2px 8px var(--shadow-soft);
+    }
+    .voice-lang-toggle.active-sichuan {
+      background: var(--pink-light);
+      border-color: var(--pink-deep);
+    }
+    .voice-lang-toggle .lang-icon { font-size: 0.85rem; }
     body.work-mode .auth-panel input {
       background: #ffffff !important;
       border: 1px solid #c8c6c4 !important;
@@ -2526,6 +2617,23 @@
         height: 40px;
         font-size: 1.1rem;
       }
+      .voice-lang-toggle {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+      }
+      .voice-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+      }
+      .quick-capture .voice-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 0.7rem;
+      }
+      .topbar-actions {
+        gap: 4px;
+      }
       .nav button {
         padding: 10px 12px;
         font-size: 0.9rem;
@@ -2565,7 +2673,10 @@
         <h1>安安姐是大美女</h1>
         <p>莫兰迪生活整理页</p>
         <div class="quick-capture">
-          <input id="quickInput" placeholder="">
+          <div class="voice-input-wrap">
+            <input id="quickInput" placeholder="">
+            <button class="voice-btn" data-target="quickInput" title="语音输入">🎤</button>
+          </div>
         </div>
       </div>
       <div class="auth-panel" id="authPanel">
@@ -2601,6 +2712,10 @@
           <p id="pageDesc" style="display:none;">只显示特殊日期提醒、今天生成的句子和工作重要节点。</p>
         </div>
         <div class="topbar-actions">
+          <button class="voice-lang-toggle" id="voiceLangToggle" title="切换语音识别语言">
+            <span class="lang-icon">🗣️</span>
+            <span id="voiceLangLabel">普通话</span>
+          </button>
           <button class="work-toggle-btn" id="workModeBtn">work</button>
           <button class="refresh-page-btn" id="forceRefreshBtn" title="强制刷新网页 Ctrl+Shift+R">😃</button>
         </div>
@@ -2619,7 +2734,10 @@
           <div class="home-capture-wrap">
             <article class="card home-capture-card">
               <h3>快速输入</h3>
-              <textarea id="homeQuickInput" placeholder="输入一句话，自动识别分配到生活记账、提醒、代收快递…&#10;例如：今天在淘宝买了螺丝贴，花了16.74，寄到视高&#10;坐地铁消费3元 / 门店买面包消费5元 / 水电费30元"></textarea>
+              <div class="voice-input-wrap">
+                <textarea id="homeQuickInput" placeholder="输入一句话，自动识别分配到生活记账、提醒、代收快递…&#10;例如：今天在淘宝买了螺丝贴，花了16.74，寄到视高&#10;坐地铁消费3元 / 门店买面包消费5元 / 水电费30元"></textarea>
+                <button class="voice-btn" data-target="homeQuickInput" title="语音输入">🎤</button>
+              </div>
               <button class="soft-button" id="homeQuickBtn">识别并分配</button>
             </article>
             <section class="card home-info-stack">
@@ -2666,7 +2784,10 @@
             <div class="accounting-top-split">
               <article class="card accounting-input-card">
                 <h3>快速记账输入</h3>
-                <textarea id="quickAccountInput" placeholder="例如：我今天在拼多多用7.9买了20条观背清江鱼，寄到视高的&#10;按 Enter 换行继续输入，Ctrl+Enter 记账"></textarea>
+                <div class="voice-input-wrap">
+                  <textarea id="quickAccountInput" placeholder="例如：我今天在拼多多用7.9买了20条观背清江鱼，寄到视高的&#10;按 Enter 换行继续输入，Ctrl+Enter 记账"></textarea>
+                  <button class="voice-btn" data-target="quickAccountInput" title="语音输入">🎤</button>
+                </div>
                 <div class="input-hint">Enter 换行 | Ctrl+Enter 记账</div>
                 <button class="soft-button" id="quickAccountBtn">AI 记账</button>
               </article>
@@ -2778,7 +2899,10 @@
                 <button class="longterm-trash-btn" id="longtermTrashBtn" title="回收站">🗑</button>
               </div>
               <div class="longterm-toolbar">
-                <input id="longtermTitleInput" placeholder="输入新笔记标题，例如：旅行出门必备物品">
+                <div class="voice-input-wrap">
+                  <input id="longtermTitleInput" placeholder="输入新笔记标题，例如：旅行出门必备物品">
+                  <button class="voice-btn" data-target="longtermTitleInput" title="语音输入">🎤</button>
+                </div>
                 <button class="ghost-button" id="addLongtermBtn">添加</button>
               </div>
               <div class="longterm-title-list" id="longtermTabs"></div>
@@ -2799,7 +2923,10 @@
             <article class="card ticket-input-card">
               <h3>粘贴工单内容</h3>
               <div class="ticket-input-row">
-                <textarea id="ticketInput" placeholder="请粘贴工单原始文本，AI 将自动识别并填充模板"></textarea>
+                <div class="voice-input-wrap">
+                  <textarea id="ticketInput" placeholder="请粘贴工单原始文本，AI 将自动识别并填充模板"></textarea>
+                  <button class="voice-btn" data-target="ticketInput" title="语音输入">🎤</button>
+                </div>
                 <button class="soft-button" id="ticketAnalyzeBtn">AI 解析</button>
               </div>
             </article>
@@ -2882,7 +3009,10 @@
               <article class="card focus-input-card">
                 <h3>一句话记账</h3>
                 <div class="focus-input-row">
-                  <input id="focusAiInput" placeholder="例如：今天淘宝买裙子花了168 / 今天收到工资12000">
+                  <div class="voice-input-wrap">
+                    <input id="focusAiInput" placeholder="例如：今天淘宝买裙子花了168 / 今天收到工资12000">
+                    <button class="voice-btn" data-target="focusAiInput" title="语音输入">🎤</button>
+                  </div>
                   <button class="soft-button" id="focusAiBtn">AI整理</button>
                 </div>
               </article>
@@ -2916,7 +3046,10 @@
   <div class="smile-workspace" id="smileWorkspace">
     <section class="smile-input-panel">
       <h2>工单助手</h2>
-      <textarea id="smileTicketInput" placeholder="请在这里粘贴大段工单内容"></textarea>
+      <div class="voice-input-wrap">
+        <textarea id="smileTicketInput" placeholder="请在这里粘贴大段工单内容"></textarea>
+        <button class="voice-btn" data-target="smileTicketInput" title="语音输入">🎤</button>
+      </div>
       <div class="ticket-translate-card">
         <div class="ticket-translate-head">
           <span>中英文工单记录翻译</span>
@@ -4265,6 +4398,135 @@
       window.setTimeout(() => toast.classList.remove('show'), 1800);
     }
 
+    // ===== 语音识别 =====
+    let activeRecognition = null;
+    let activeVoiceTarget = null;
+    let voiceLang = localStorage.getItem('voiceLang') || 'mandarin'; // 'mandarin' or 'sichuan'
+
+    // 四川话常用语音识别纠错词典
+    const sichuanCorrections = [
+      // 数字纠错（四川话发音容易误识别）
+      { from: /十块/g, to: '10块' },
+      { from: /四块/g, to: '4块' },
+      // 常见四川话→普通话映射
+      { from: /啥子/g, to: '什么' },
+      { from: /啷个/g, to: '怎么' },
+      { from: /浪个/g, to: '那样' },
+      { from: /嘞个/g, to: '这个' },
+      { from: /要得/g, to: '好的' },
+      { from: /没得/g, to: '没有' },
+      { from: /莫得/g, to: '没有' },
+      { from: /巴适/g, to: '很好' },
+      { from: /安逸/g, to: '舒服' },
+      { from: /爪子/g, to: '做什么' },
+      { from: /撇脱/g, to: '方便' },
+      { from: /搞快/g, to: '快点' },
+      // 消费场景纠错
+      { from: /坐地铁|坐轻轨/g, to: '坐地铁' },
+      { from: /买菜|卖菜/g, to: '买菜' },
+      { from: /充话费|充花费/g, to: '充话费' },
+      // 平台名称纠错
+      { from: /平多多|拼兜兜|拼多多/g, to: 'PDD' },
+      { from: /掏宝|淘贝/g, to: '淘宝' },
+      { from: /东京|东京/g, to: '京东' },
+      // 金额单位纠错
+      { from: /块钱/g, to: '元' },
+      { from: /毛钱/g, to: '角' },
+    ];
+
+    function applySichuanCorrections(text) {
+      let result = text;
+      for (const rule of sichuanCorrections) {
+        result = result.replace(rule.from, rule.to);
+      }
+      return result;
+    }
+
+    function toggleVoiceLang() {
+      voiceLang = voiceLang === 'mandarin' ? 'sichuan' : 'mandarin';
+      localStorage.setItem('voiceLang', voiceLang);
+      const label = document.getElementById('voiceLangLabel');
+      const toggle = document.getElementById('voiceLangToggle');
+      if (label) label.textContent = voiceLang === 'sichuan' ? '四川话' : '普通话';
+      if (toggle) toggle.classList.toggle('active-sichuan', voiceLang === 'sichuan');
+      showToast(voiceLang === 'sichuan' ? '已切换到四川话识别' : '已切换到普通话识别');
+    }
+
+    function initVoiceLangUI() {
+      const label = document.getElementById('voiceLangLabel');
+      const toggle = document.getElementById('voiceLangToggle');
+      if (label) label.textContent = voiceLang === 'sichuan' ? '四川话' : '普通话';
+      if (toggle) toggle.classList.toggle('active-sichuan', voiceLang === 'sichuan');
+    }
+
+    function toggleVoiceInput(targetId) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+
+      if (activeRecognition) {
+        activeRecognition.stop();
+        activeRecognition = null;
+        activeVoiceTarget = null;
+        document.querySelectorAll('.voice-btn.recording').forEach(b => b.classList.remove('recording'));
+        return;
+      }
+
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) {
+        showToast('当前浏览器不支持语音输入，请用 Chrome 或 Edge');
+        return;
+      }
+
+      const rec = new SR();
+      // 普通话和四川话都使用 zh-CN，四川话模式额外做语音纠错
+      rec.lang = 'zh-CN';
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 3;
+
+      const btn = document.querySelector(`.voice-btn[data-target="${targetId}"]`);
+      if (btn) btn.classList.add('recording');
+      const langName = voiceLang === 'sichuan' ? '四川话' : '普通话';
+      showToast(`语音输入已开启（${langName}），请说话…`);
+
+      let finalText = target.value || '';
+
+      rec.onresult = function(event) {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          let transcript = event.results[i][0].transcript;
+          // 四川话模式：对识别结果进行纠错
+          if (voiceLang === 'sichuan') {
+            transcript = applySichuanCorrections(transcript);
+          }
+          if (event.results[i].isFinal) {
+            finalText += transcript;
+          } else {
+            interim += transcript;
+          }
+        }
+        target.value = finalText + interim;
+        target.dispatchEvent(new Event('input'));
+      };
+
+      rec.onerror = function(event) {
+        showToast('语音识别出错：' + (event.error || '未知错误'));
+        if (btn) btn.classList.remove('recording');
+        activeRecognition = null;
+        activeVoiceTarget = null;
+      };
+
+      rec.onend = function() {
+        if (btn) btn.classList.remove('recording');
+        activeRecognition = null;
+        activeVoiceTarget = null;
+      };
+
+      rec.start();
+      activeRecognition = rec;
+      activeVoiceTarget = targetId;
+    }
+
     function aiOrganize(sourceText) {
       const text = sourceText || document.getElementById('quickAccountInput').value;
       const newRows = [];
@@ -5516,6 +5778,13 @@
         event.preventDefault();
         analyzeTicket();
       }
+    });
+    // 语音输入按钮绑定
+    initVoiceLangUI();
+    const voiceLangToggleBtn = document.getElementById('voiceLangToggle');
+    if (voiceLangToggleBtn) voiceLangToggleBtn.addEventListener('click', toggleVoiceLang);
+    document.querySelectorAll('.voice-btn[data-target]').forEach(btn => {
+      btn.addEventListener('click', () => toggleVoiceInput(btn.dataset.target));
     });
     bindCopyButtons();
     loadAppData();

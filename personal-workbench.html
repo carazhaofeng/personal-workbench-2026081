@@ -267,6 +267,15 @@
       color: var(--muted);
       word-break: break-all;
     }
+    .auth-hint {
+      font-size: 0.72rem;
+      color: var(--pink-deep);
+      background: var(--pink-light);
+      border-radius: 10px;
+      padding: 8px 10px;
+      line-height: 1.5;
+      text-align: center;
+    }
     body.work-mode .auth-panel input {
       background: #ffffff !important;
       border: 1px solid #c8c6c4 !important;
@@ -2352,9 +2361,8 @@
         <div class="auth-logged-out" id="authLoggedOut">
           <div class="auth-label">账号登录（多设备同步）</div>
           <input type="email" id="authEmail" placeholder="在此输入邮箱地址">
-          <button class="soft-button" id="authSendCodeBtn">发送验证码</button>
-          <input type="text" id="authCode" placeholder="在此输入收到的验证码" style="display:none;">
-          <button class="soft-button" id="authVerifyBtn" style="display:none;">登录</button>
+          <button class="soft-button" id="authSendCodeBtn">发送登录链接</button>
+          <div class="auth-hint" id="authHint" style="display:none;">登录链接已发到邮箱，请去邮箱点击链接完成登录</div>
         </div>
         <div class="auth-logged-in" id="authLoggedIn" style="display:none;">
           <span class="auth-email" id="authUserEmail"></span>
@@ -2796,42 +2804,27 @@
 
     async function sendAuthCode() {
       const emailInput = document.getElementById('authEmail');
-      const codeInput = document.getElementById('authCode');
       const sendBtn = document.getElementById('authSendCodeBtn');
-      const verifyBtn = document.getElementById('authVerifyBtn');
+      const hint = document.getElementById('authHint');
       const email = emailInput.value.trim();
       if (!email || !email.includes('@')) {
         showToast('请输入有效的邮箱地址');
         return;
       }
       if (!_supabase) { showToast('服务未初始化'); return; }
-      const { error } = await _supabase.auth.signInWithOtp({ email });
+      const { error } = await _supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin + window.location.pathname
+        }
+      });
       if (error) {
         showToast('发送失败：' + error.message);
         return;
       }
-      showToast('验证码已发送到邮箱');
       sendBtn.style.display = 'none';
-      codeInput.style.display = 'block';
-      verifyBtn.style.display = 'block';
-    }
-
-    async function verifyAuthCode() {
-      const emailInput = document.getElementById('authEmail');
-      const codeInput = document.getElementById('authCode');
-      const email = emailInput.value.trim();
-      const code = codeInput.value.trim();
-      if (!code) { showToast('请输入验证码'); return; }
-      if (!_supabase) { showToast('服务未初始化'); return; }
-      const { data, error } = await _supabase.auth.verifyOtp({ email, token: code, type: 'email' });
-      if (error) {
-        showToast('验证失败：' + error.message);
-        return;
-      }
-      currentUser = data.user;
-      updateAuthUI();
-      showToast('登录成功');
-      await syncFromCloud();
+      if (hint) hint.style.display = 'block';
+      showToast('登录链接已发送到邮箱');
     }
 
     async function logout() {
@@ -5318,7 +5311,6 @@
     renderHomeDeliveryCount();
 
     document.getElementById('authSendCodeBtn').addEventListener('click', sendAuthCode);
-    document.getElementById('authVerifyBtn').addEventListener('click', verifyAuthCode);
     document.getElementById('authLogoutBtn').addEventListener('click', logout);
     if (initSupabase()) {
       checkAuth();

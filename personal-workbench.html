@@ -501,6 +501,15 @@
       background: linear-gradient(145deg, var(--pink-light), var(--surface));
       border: 1px solid var(--rule);
     }
+    .home-info-clickable {
+      cursor: pointer;
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .home-info-clickable:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px var(--shadow);
+      border-color: var(--accent);
+    }
     .home-info-icon {
       font-size: 1.3rem;
       flex-shrink: 0;
@@ -2419,7 +2428,7 @@
                     <div class="home-info-value" id="homeWeather">加载中…</div>
                   </div>
                 </div>
-                <div class="home-info-card">
+                <div class="home-info-card home-info-clickable" id="homeDeliveryCard">
                   <span class="home-info-icon">📦</span>
                   <div>
                     <div class="home-info-label">待到货包裹</div>
@@ -5316,6 +5325,8 @@
     fitQuoteToOneLine();
     fetchChengduWeather();
     renderHomeDeliveryCount();
+
+    document.getElementById('homeDeliveryCard').addEventListener('dblclick', () => switchPage('delivery'));
 
     document.getElementById('authSendCodeBtn').addEventListener('click', sendAuthCode);
     document.getElementById('authLogoutBtn').addEventListener('click', logout);

@@ -2353,10 +2353,212 @@
         font-size: 0.7rem;
       }
     }
+
+    /* ===== 移动端适配 ===== */
+    .mobile-menu-btn {
+      display: none;
+    }
+    .sidebar-overlay {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      html { font-size: 14px; overflow: auto; }
+      body { overflow: auto; height: auto; min-height: 100vh; }
+      .app {
+        grid-template-columns: 1fr;
+        padding: 0;
+        gap: 0;
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+      }
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform .3s ease;
+        border-radius: 0;
+        overflow-y: auto;
+      }
+      .sidebar.mobile-open {
+        transform: translateX(0);
+      }
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: 999;
+      }
+      .sidebar-overlay.show {
+        display: block;
+      }
+      .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border: 2px solid var(--pink-deep);
+        border-radius: 12px;
+        background: var(--surface);
+        color: var(--pink-deep);
+        font-size: 1.3rem;
+        flex-shrink: 0;
+      }
+      .main {
+        height: auto;
+        min-height: 100vh;
+        border-radius: 0;
+        overflow: visible;
+      }
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--pink-glass);
+        backdrop-filter: var(--blur);
+        flex-direction: row;
+        align-items: center;
+        padding: 10px 12px;
+      }
+      .topbar h2 { font-size: 1rem; flex: 1; }
+      .content {
+        padding: 10px;
+        overflow: visible;
+        height: auto;
+      }
+      .page.active {
+        height: auto;
+        overflow: visible;
+      }
+      .home-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+      }
+      .home-capture-wrap {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+      }
+      .home-info-stack {
+        overflow: visible;
+      }
+      .home-info-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      .home-info-card {
+        padding: 8px 12px;
+      }
+      .home-capture-card textarea {
+        min-height: 100px;
+        max-height: 160px;
+      }
+      .home-reminder-block {
+        grid-template-rows: auto auto;
+        overflow: visible;
+      }
+      .home-reminder-col.overdue-col {
+        max-height: none;
+      }
+      .home-reminder-scroll {
+        max-height: 300px;
+      }
+      .side-reminder-stack {
+        position: static;
+      }
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      .reminder-column .list-row {
+        grid-template-columns: 70px 1fr auto auto;
+        font-size: 0.78rem;
+      }
+      .focus-split-layout {
+        grid-template-columns: 1fr;
+        overflow: visible;
+      }
+      .longterm-layout {
+        grid-template-columns: 1fr;
+        overflow: visible;
+        height: auto;
+      }
+      .longterm-list-panel {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .delivery-layout {
+        grid-template-columns: 1fr;
+        overflow: visible;
+        height: auto;
+      }
+      .delivery-groups {
+        grid-template-columns: 1fr;
+        overflow: visible;
+      }
+      .delivery-group {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .soup-card {
+        padding: 10px 14px;
+      }
+      .soup-card .quote {
+        font-size: 1.1rem;
+        white-space: normal;
+      }
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .work-toggle-btn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+      }
+      .refresh-page-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.1rem;
+      }
+      .nav button {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+      }
+      .auth-panel {
+        padding: 10px 12px;
+      }
+      .auth-panel input {
+        font-size: 16px;
+      }
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+      .finance-grid {
+        grid-template-columns: 1fr;
+      }
+      body.work-mode .app {
+        grid-template-columns: 1fr;
+      }
+      body.smile-mode .smile-workspace {
+        grid-template-columns: 1fr;
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 8px;
+        overflow-y: auto;
+      }
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
   <div class="app">
     <aside class="sidebar">
       <div class="brand">
@@ -2393,9 +2595,10 @@
 
     <main class="main">
       <header class="topbar">
-        <div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
           <h2 id="pageTitle">首页</h2>
-          <p id="pageDesc">只显示特殊日期提醒、今天生成的句子和工作重要节点。</p>
+          <p id="pageDesc" style="display:none;">只显示特殊日期提醒、今天生成的句子和工作重要节点。</p>
         </div>
         <div class="topbar-actions">
           <button class="work-toggle-btn" id="workModeBtn">work</button>
@@ -5327,6 +5530,29 @@
     renderHomeDeliveryCount();
 
     document.getElementById('homeDeliveryCard').addEventListener('dblclick', () => switchPage('delivery'));
+
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const sidebarEl = document.querySelector('.sidebar');
+    function openMobileSidebar() {
+      sidebarEl.classList.add('mobile-open');
+      sidebarOverlay.classList.add('show');
+    }
+    function closeMobileSidebar() {
+      sidebarEl.classList.remove('mobile-open');
+      sidebarOverlay.classList.remove('show');
+    }
+    mobileMenuBtn.addEventListener('click', () => {
+      if (sidebarEl.classList.contains('mobile-open')) {
+        closeMobileSidebar();
+      } else {
+        openMobileSidebar();
+      }
+    });
+    sidebarOverlay.addEventListener('click', closeMobileSidebar);
+    navButtons.forEach(btn => btn.addEventListener('click', () => {
+      if (window.innerWidth <= 768) closeMobileSidebar();
+    }));
 
     document.getElementById('authSendCodeBtn').addEventListener('click', sendAuthCode);
     document.getElementById('authLogoutBtn').addEventListener('click', logout);

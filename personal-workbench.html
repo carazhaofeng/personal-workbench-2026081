@@ -3083,6 +3083,10 @@
         if (ltt && ltt.length) {
           longtermTrash.splice(0, longtermTrash.length, ...ltt.map(r => ({ title: r.title, content: r.content, deletedAt: r.deleted_at })));
         }
+        window.localStorage.setItem(APP_DATA_STORAGE_KEY, JSON.stringify({
+          accounts, pendingDeliveries, receivedDeliveries, monthlyInputRecords,
+          workItems, memoItems, longtermNotes, longtermTrash
+        }));
         renderAll();
         showToast('云端数据已同步');
       } catch (e) {

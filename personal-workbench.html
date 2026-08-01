@@ -2773,7 +2773,14 @@
         console.warn('Supabase SDK 未加载');
         return false;
       }
-      _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        auth: {
+          flowType: 'implicit',
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true
+        }
+      });
       return true;
     }
 

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>正在跳转...</title>
+  <script>
+    // GitHub Pages 404 重定向：把路径中的参数带回主页
+    var redirect = window.location.origin + '/personal-workbench-2026081/personal-workbench.html';
+    if (window.location.hash) {
+      redirect += window.location.hash;
+    }
+    if (window.location.search) {
+      redirect += window.location.search;
+    }
+    window.location.replace(redirect);
+  </script>
+</head>
+<body>
+  <p>正在跳转到工作台...</p>
+</body>
+</html>

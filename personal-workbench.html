@@ -3,7 +3,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>安安姐是大美女</title>
   <style>
     @font-face {
@@ -2428,17 +2428,13 @@
     }
     @media (max-width: 680px) {
       .content, .topbar {
-        padding: 18px;
+        padding: 10px 12px;
       }
       .finance-grid, .field-grid {
         grid-template-columns: 1fr;
       }
       .list-row {
         grid-template-columns: 1fr;
-      }
-      .topbar {
-        align-items: flex-start;
-        flex-direction: column;
       }
       table {
         font-size: 0.7rem;
@@ -2453,15 +2449,17 @@
       display: none;
     }
     @media (max-width: 768px) {
-      html { font-size: 14px; overflow: auto; }
-      body { overflow: auto; height: auto; min-height: 100vh; }
+      html { font-size: 14px; overflow-x: hidden; overflow-y: auto; }
+      body { overflow-x: hidden; height: auto; min-height: 100vh; max-width: 100vw; }
+      * { -webkit-text-size-adjust: 100%; }
       .app {
         grid-template-columns: 1fr;
         padding: 0;
         gap: 0;
         height: auto;
         min-height: 100vh;
-        overflow: visible;
+        max-width: 100vw;
+        overflow-x: hidden;
       }
       .sidebar {
         position: fixed;
@@ -2492,20 +2490,21 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
         border: 2px solid var(--pink-deep);
-        border-radius: 12px;
+        border-radius: 10px;
         background: var(--surface);
         color: var(--pink-deep);
-        font-size: 1.3rem;
+        font-size: 1.2rem;
         flex-shrink: 0;
       }
       .main {
         height: auto;
         min-height: 100vh;
+        max-width: 100vw;
         border-radius: 0;
-        overflow: visible;
+        overflow-x: hidden;
       }
       .topbar {
         position: sticky;
@@ -2515,18 +2514,25 @@
         backdrop-filter: var(--blur);
         flex-direction: row;
         align-items: center;
-        padding: 10px 12px;
+        padding: 8px 10px;
+        gap: 6px;
       }
-      .topbar h2 { font-size: 1rem; flex: 1; }
+      .topbar > div:first-child { min-width: 0; }
+      .topbar h2 { font-size: 0.9rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .content {
-        padding: 10px;
-        overflow: visible;
+        padding: 8px;
+        overflow-x: hidden;
         height: auto;
+        max-width: 100%;
       }
       .page.active {
         height: auto;
-        overflow: visible;
+        overflow-x: hidden;
+        max-width: 100%;
       }
+      .card { max-width: 100%; overflow-x: hidden; }
+
+      /* ===== 首页布局 ===== */
       .home-layout {
         grid-template-columns: 1fr;
         height: auto;
@@ -2537,9 +2543,7 @@
         height: auto;
         overflow: visible;
       }
-      .home-info-stack {
-        overflow: visible;
-      }
+      .home-info-stack { overflow: visible; }
       .home-info-row {
         grid-template-columns: 1fr;
         gap: 6px;
@@ -2555,26 +2559,83 @@
         grid-template-rows: auto auto;
         overflow: visible;
       }
-      .home-reminder-col.overdue-col {
-        max-height: none;
-      }
-      .home-reminder-scroll {
-        max-height: 300px;
-      }
-      .side-reminder-stack {
-        position: static;
-      }
-      .grid-2 {
-        grid-template-columns: 1fr;
-      }
+      .home-reminder-col.overdue-col { max-height: none; }
+      .home-reminder-scroll { max-height: 300px; }
+      .side-reminder-stack { position: static; }
+
+      /* ===== 通用网格 ===== */
+      .grid-2 { grid-template-columns: 1fr; }
+      .field-grid { grid-template-columns: 1fr; }
+      .finance-grid { grid-template-columns: 1fr; }
       .reminder-column .list-row {
-        grid-template-columns: 70px 1fr auto auto;
-        font-size: 0.78rem;
+        grid-template-columns: 60px 1fr auto auto;
+        font-size: 0.75rem;
+        gap: 4px;
       }
+
+      /* ===== 生活记账 ===== */
+      .accounting-page-wrap { height: auto; overflow: visible; }
+      .accounting-layout {
+        height: auto;
+        grid-template-rows: auto auto;
+        overflow: visible;
+      }
+      .accounting-top-split {
+        grid-template-columns: 1fr;
+        overflow: visible;
+      }
+      .accounting-layout .table-wrap { max-height: none; }
+      .accounting-layout table,
+      .accounting-layout th,
+      .accounting-layout td {
+        font-size: 0.7rem;
+        padding: 3px 4px;
+      }
+
+      /* ===== 表格防溢出 ===== */
+      .table-wrap {
+        overflow-x: auto;
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
+      }
+      table {
+        width: 100% !important;
+        max-width: 100%;
+        table-layout: auto;
+        font-size: 0.68rem;
+      }
+      th, td {
+        padding: 3px 4px;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+      th:nth-child(n), td:nth-child(n) { width: auto; }
+
+      /* 专注模式表格 */
       .focus-split-layout {
         grid-template-columns: 1fr;
         overflow: visible;
       }
+      .focus-table-wrap {
+        overflow-x: auto;
+        max-width: 100%;
+      }
+      .focus-table-wrap table {
+        width: 100% !important;
+        min-width: 0 !important;
+        table-layout: auto;
+        font-size: 0.68rem;
+      }
+      .focus-table-wrap th,
+      .focus-table-wrap td {
+        padding: 4px 5px;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      /* ===== 长期记录 ===== */
       .longterm-layout {
         grid-template-columns: 1fr;
         overflow: visible;
@@ -2584,6 +2645,10 @@
         max-height: 200px;
         overflow-y: auto;
       }
+      .longterm-toolbar { grid-template-columns: 1fr; gap: 6px; }
+
+      /* ===== 待收快递 ===== */
+      .delivery-page-wrap { height: auto; overflow: visible; }
       .delivery-layout {
         grid-template-columns: 1fr;
         overflow: visible;
@@ -2597,62 +2662,67 @@
         max-height: 300px;
         overflow-y: auto;
       }
-      .soup-card {
-        padding: 10px 14px;
+
+      /* ===== 工单/模板 ===== */
+      .ticket-layout {
+        grid-template-columns: 1fr;
       }
+      .ticket-input-row { flex-direction: column; gap: 6px; }
+      .ticket-output { max-width: 100%; overflow-x: hidden; }
+      .template-block {
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+      .template-line {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+      .template-line .label { white-space: normal; }
+      .template-line .value {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      /* ===== 心灵鸡汤 ===== */
+      .soup-card { padding: 10px 14px; }
       .soup-card .quote {
         font-size: 1.1rem;
         white-space: normal;
       }
-      .table-wrap {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+
+      /* ===== 顶栏按钮 ===== */
+      .work-toggle-btn { padding: 6px 10px; font-size: 0.78rem; }
+      .refresh-page-btn { width: 36px; height: 36px; font-size: 1rem; }
+      .voice-lang-toggle { padding: 4px 8px; font-size: 0.68rem; }
+      .voice-lang-toggle .lang-icon { font-size: 0.75rem; }
+      .voice-btn { width: 30px; height: 30px; font-size: 0.85rem; }
+      .quick-capture .voice-btn { width: 24px; height: 24px; font-size: 0.7rem; }
+      .topbar-actions { gap: 4px; flex-shrink: 0; }
+
+      /* ===== 侧边栏 ===== */
+      .nav button { padding: 10px 12px; font-size: 0.9rem; }
+      .auth-panel { padding: 10px 12px; }
+      .auth-panel input { font-size: 16px; }
+
+      /* ===== Work模式 ===== */
+      body.work-mode .app { grid-template-columns: 1fr; }
+      .work-excel-table {
+        width: 100% !important;
+        min-width: 0 !important;
+        font-size: 0.68rem;
       }
-      .work-toggle-btn {
-        padding: 8px 14px;
-        font-size: 0.85rem;
+      .work-excel-table th,
+      .work-excel-table td {
+        padding: 3px 5px;
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
       }
-      .refresh-page-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.1rem;
-      }
-      .voice-lang-toggle {
-        padding: 4px 8px;
-        font-size: 0.7rem;
-      }
-      .voice-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 0.9rem;
-      }
-      .quick-capture .voice-btn {
-        width: 24px;
-        height: 24px;
-        font-size: 0.7rem;
-      }
-      .topbar-actions {
-        gap: 4px;
-      }
-      .nav button {
-        padding: 10px 12px;
-        font-size: 0.9rem;
-      }
-      .auth-panel {
-        padding: 10px 12px;
-      }
-      .auth-panel input {
-        font-size: 16px;
-      }
-      .field-grid {
-        grid-template-columns: 1fr;
-      }
-      .finance-grid {
-        grid-template-columns: 1fr;
-      }
-      body.work-mode .app {
-        grid-template-columns: 1fr;
-      }
+
+      /* ===== Smile工单模式 ===== */
+      body.smile-mode { overflow: hidden; }
       body.smile-mode .smile-workspace {
         grid-template-columns: 1fr;
         width: 100vw;
@@ -2660,7 +2730,45 @@
         margin: 0;
         padding: 8px;
         overflow-y: auto;
+        overflow-x: hidden;
       }
+      .smile-input-panel { padding: 10px 12px; }
+      .smile-template-panel { overflow-x: hidden; }
+      .ticket-translate-output {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      /* ===== 输入框防溢出 ===== */
+      textarea, input {
+        max-width: 100%;
+      }
+      .voice-input-wrap { max-width: 100%; }
+      .soft-button, .ghost-button { white-space: nowrap; }
+    }
+
+    /* ===== iPhone 极窄屏幕优化 (<= 430px) ===== */
+    @media (max-width: 430px) {
+      html { font-size: 13px; }
+      .topbar { padding: 6px 8px; }
+      .topbar h2 { font-size: 0.82rem; }
+      .work-toggle-btn { padding: 5px 8px; font-size: 0.72rem; }
+      .refresh-page-btn { width: 32px; height: 32px; font-size: 0.9rem; }
+      .voice-lang-toggle { padding: 3px 6px; font-size: 0.62rem; }
+      .voice-lang-toggle .lang-icon { font-size: 0.68rem; }
+      .voice-btn { width: 28px; height: 28px; font-size: 0.8rem; }
+      .content { padding: 6px; }
+      .card { padding: 8px 10px; border-radius: 14px; }
+      table { font-size: 0.62rem; }
+      th, td { padding: 2px 3px; }
+      .reminder-column .list-row {
+        grid-template-columns: 50px 1fr auto;
+        font-size: 0.68rem;
+      }
+      .reminder-column .list-row .list-tag { display: none; }
+      .soup-card .quote { font-size: 0.95rem; }
+      .home-info-card { padding: 6px 10px; }
+      .nav button { padding: 8px 10px; font-size: 0.82rem; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

@@ -2788,7 +2788,7 @@
         <div class="quick-capture">
           <div class="voice-input-wrap">
             <input id="quickInput" placeholder="">
-            <button class="voice-btn" data-target="quickInput" title="语音输入">🎤</button>
+            <button class="voice-btn" data-target="quickInput" title="语音输入">😃</button>
           </div>
         </div>
       </div>
@@ -2825,10 +2825,6 @@
           <p id="pageDesc" style="display:none;">只显示特殊日期提醒、今天生成的句子和工作重要节点。</p>
         </div>
         <div class="topbar-actions">
-          <button class="voice-lang-toggle" id="voiceLangToggle" title="切换语音识别语言">
-            <span class="lang-icon">🗣️</span>
-            <span id="voiceLangLabel">普通话</span>
-          </button>
           <button class="work-toggle-btn" id="workModeBtn">work</button>
           <button class="refresh-page-btn" id="forceRefreshBtn" title="强制刷新网页 Ctrl+Shift+R">😃</button>
         </div>
@@ -2849,7 +2845,7 @@
               <h3>快速输入</h3>
               <div class="voice-input-wrap">
                 <textarea id="homeQuickInput" placeholder="输入一句话，自动识别分配到生活记账、提醒、代收快递…&#10;例如：今天在淘宝买了螺丝贴，花了16.74，寄到视高&#10;坐地铁消费3元 / 门店买面包消费5元 / 水电费30元"></textarea>
-                <button class="voice-btn" data-target="homeQuickInput" title="语音输入">🎤</button>
+                <button class="voice-btn" data-target="homeQuickInput" title="语音输入">😃</button>
               </div>
               <button class="soft-button" id="homeQuickBtn">识别并分配</button>
             </article>
@@ -2899,7 +2895,7 @@
                 <h3>快速记账输入</h3>
                 <div class="voice-input-wrap">
                   <textarea id="quickAccountInput" placeholder="例如：我今天在拼多多用7.9买了20条观背清江鱼，寄到视高的&#10;按 Enter 换行继续输入，Ctrl+Enter 记账"></textarea>
-                  <button class="voice-btn" data-target="quickAccountInput" title="语音输入">🎤</button>
+                  <button class="voice-btn" data-target="quickAccountInput" title="语音输入">😃</button>
                 </div>
                 <div class="input-hint">Enter 换行 | Ctrl+Enter 记账</div>
                 <button class="soft-button" id="quickAccountBtn">AI 记账</button>
@@ -3014,7 +3010,7 @@
               <div class="longterm-toolbar">
                 <div class="voice-input-wrap">
                   <input id="longtermTitleInput" placeholder="输入新笔记标题，例如：旅行出门必备物品">
-                  <button class="voice-btn" data-target="longtermTitleInput" title="语音输入">🎤</button>
+                  <button class="voice-btn" data-target="longtermTitleInput" title="语音输入">😃</button>
                 </div>
                 <button class="ghost-button" id="addLongtermBtn">添加</button>
               </div>
@@ -3038,7 +3034,7 @@
               <div class="ticket-input-row">
                 <div class="voice-input-wrap">
                   <textarea id="ticketInput" placeholder="请粘贴工单原始文本，AI 将自动识别并填充模板"></textarea>
-                  <button class="voice-btn" data-target="ticketInput" title="语音输入">🎤</button>
+                  <button class="voice-btn" data-target="ticketInput" title="语音输入">😃</button>
                 </div>
                 <button class="soft-button" id="ticketAnalyzeBtn">AI 解析</button>
               </div>
@@ -3124,7 +3120,7 @@
                 <div class="focus-input-row">
                   <div class="voice-input-wrap">
                     <input id="focusAiInput" placeholder="例如：今天淘宝买裙子花了168 / 今天收到工资12000">
-                    <button class="voice-btn" data-target="focusAiInput" title="语音输入">🎤</button>
+                    <button class="voice-btn" data-target="focusAiInput" title="语音输入">😃</button>
                   </div>
                   <button class="soft-button" id="focusAiBtn">AI整理</button>
                 </div>
@@ -3161,7 +3157,7 @@
       <h2>工单助手</h2>
       <div class="voice-input-wrap">
         <textarea id="smileTicketInput" placeholder="请在这里粘贴大段工单内容"></textarea>
-        <button class="voice-btn" data-target="smileTicketInput" title="语音输入">🎤</button>
+        <button class="voice-btn" data-target="smileTicketInput" title="语音输入">😃</button>
       </div>
       <div class="ticket-translate-card">
         <div class="ticket-translate-head">
@@ -5893,9 +5889,6 @@
       }
     });
     // 语音输入按钮绑定
-    initVoiceLangUI();
-    const voiceLangToggleBtn = document.getElementById('voiceLangToggle');
-    if (voiceLangToggleBtn) voiceLangToggleBtn.addEventListener('click', toggleVoiceLang);
     document.querySelectorAll('.voice-btn[data-target]').forEach(btn => {
       btn.addEventListener('click', () => toggleVoiceInput(btn.dataset.target));
     });

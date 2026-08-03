@@ -566,6 +566,42 @@
       gap: 10px;
       align-content: start;
     }
+    .home-pickup-section {
+      display: none;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 2px 0;
+    }
+    .home-pickup-section:empty {
+      display: none;
+    }
+    .home-pickup-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 10px;
+      background: linear-gradient(145deg, var(--accent2), var(--surface));
+      border: 1px solid var(--rule);
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+    .home-pickup-name {
+      color: var(--ink);
+      font-weight: 500;
+    }
+    .home-pickup-loc {
+      color: var(--muted);
+      font-size: 0.68rem;
+    }
+    .home-pickup-code {
+      color: var(--brand);
+      font-weight: 700;
+      background: var(--surface);
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
     .home-capture-card textarea {
       min-height: 160px;
       max-height: 220px;
@@ -2348,6 +2384,16 @@
     body.work-mode .pickup-panel {
       max-height: none !important;
     }
+    body.work-mode .home-pickup-item {
+      background: #ffffff !important;
+      border: none !important;
+      border-radius: 0 !important;
+    }
+    body.work-mode .home-pickup-code {
+      background: transparent !important;
+      color: #999999 !important;
+      font-weight: 400 !important;
+    }
     body.smile-mode {
       background:
         radial-gradient(circle at 18% 22%, rgba(0, 120, 212, .06), transparent 38%),
@@ -3138,6 +3184,7 @@
                   </div>
                 </div>
               </div>
+              <div class="home-pickup-section" id="homePickupSection"></div>
               <div class="home-reminder-block">
                 <div class="home-reminder-col">
                   <h4>提醒</h4>
@@ -3659,7 +3706,7 @@
       renderWork(); renderMemo(); renderFinanceNotes();
       renderLongtermNotes(); renderAccounts(); renderDeliveries(); renderPickupList();
       renderInputRecords(); renderHomeReminders();
-      renderHomeMonthSpend(); renderHomeDeliveryCount();
+      renderHomeMonthSpend(); renderHomeDeliveryCount(); renderHomePickupList();
       initQuote(); fitQuoteToOneLine(); fetchChengduWeather();
     }
 
@@ -4597,6 +4644,25 @@
       el.textContent = `${pendingDeliveries.length} 件`;
     }
 
+    function renderHomePickupList() {
+      const el = document.getElementById('homePickupSection');
+      if (!el) return;
+      const pending = pickupList.filter(p => !p.received);
+      if (!pending.length) {
+        el.innerHTML = '';
+        el.style.display = 'none';
+        return;
+      }
+      el.style.display = 'flex';
+      el.innerHTML = pending.map(p =>
+        `<div class="home-pickup-item">
+          <span class="home-pickup-name">${p.item}</span>
+          <span class="home-pickup-loc">${p.pickupLocation || '待确认'}</span>
+          ${p.pickupCode ? `<span class="home-pickup-code">${p.pickupCode}</span>` : ''}
+        </div>`
+      ).join('');
+    }
+
     async function fetchChengduWeather() {
       const el = document.getElementById('homeWeather');
       if (!el) return;
@@ -4693,8 +4759,9 @@
     }
 
     // ===== 代取件列表渲染 =====
-    const PICKUP_LOCATION_ORDER = ['公司', '万科兔喜', '万科菜鸟', '视高申通', '视高邮政', '视高中通', '视高极兔', '欢喵驿站'];
+    const PICKUP_LOCATION_ORDER = ['公司', '万科兔喜', '万科菜鸟', '视高申通', '视高邮政', '视高中通', '视高极兔', '欢喵驿站', '待确认'];
     function renderPickupList() {
+      renderHomePickupList();
       if (!pickupListEl) return;
       const pending = pickupList.filter(p => !p.received);
       if (!pending.length) {
@@ -5103,11 +5170,17 @@
           if (pickupLocation) matchedDelivery.pickupLocation = pickupLocation;
         } else {
           // 没有匹配到已有快递，作为独立取件记录
-          if (pickupLocation) {
+          if (pickupCode || pickupLocation) {
             const item = detectItem(text);
+            // 如果没有检测到自提点，尝试从已有待收快递中匹配同商品的提货点
+            let resolvedLocation = pickupLocation;
+            if (!resolvedLocation) {
+              const matched = pendingDeliveries.find(p => p.item.includes(item) || item.includes(p.item));
+              if (matched && matched.pickupLocation) resolvedLocation = matched.pickupLocation;
+            }
             const platform = detectPlatform(text);
             const date = getDateFromText(text) === '无日期' ? (() => { const n = new Date(); return `${n.getMonth() + 1}月${n.getDate()}日`; })() : getDateFromText(text);
-            const newPickup = { item, platform, pickupLocation, date, received: false };
+            const newPickup = { item, platform, pickupLocation: resolvedLocation || '待确认', date, received: false };
             if (pickupCode) newPickup.pickupCode = pickupCode;
             // 避免重复
             const exists = pickupList.some(p => p.item === newPickup.item && p.pickupLocation === newPickup.pickupLocation && p.date === newPickup.date);
@@ -5293,6 +5366,19 @@
       if (/水电/.test(text)) return '水电费';
       if (/燃气/.test(text)) return '燃气费';
       if (/物业/.test(text)) return '物业费';
+      // 取件码文本中的商品名提取（如"裙子 取件码 A1234"或"取件码 A1234 裙子"）
+      if (/取货码|取件码|提货码|取件号|提货号|货号/.test(text)) {
+        const parts = text.split(/取货码|取件码|提货码|取件号|提货号|货号/);
+        if (parts[0] && parts[0].trim().length >= 2) {
+          const name = parts[0].trim().replace(/^[，,。、\s]+|[，,。、\s]+$/g, '');
+          if (name.length >= 2 && name.length <= 20) return name;
+        }
+        const afterMatch = text.match(/(?:取货码|取件码|提货码|取件号|提货号|货号)\s*[:：]?\s*[A-Za-z0-9\-]+\s*(.+)/);
+        if (afterMatch && afterMatch[1] && afterMatch[1].trim().length >= 2) {
+          const name = afterMatch[1].trim().replace(/^[，,。、\s]+|[，,。、\s]+$/g, '');
+          if (name.length >= 2 && name.length <= 20) return name;
+        }
+      }
       const match = text.match(/买了?\s*(?:\d+条|个|件|盒|包|箱|瓶|匹)?(.+?)(?:，|。|寄到|寄到了|送到|发到|寄往|发往|花了|消费|用了|\d+(?:\.\d+)?元|\d+(?:\.\d+)?块|¥|$)/);
       if (match) {
         return match[1]

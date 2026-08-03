@@ -845,7 +845,24 @@
     th:nth-child(4), td:nth-child(4) { width: 15%; }
     th:nth-child(5), td:nth-child(5) { width: 14%; }
     th:nth-child(6), td:nth-child(6) { width: 8%; }
-    th:nth-child(7), td:nth-child(7) { width: 30%; }
+    th:nth-child(7), td:nth-child(7) { width: 26%; }
+    th:nth-child(8), td:nth-child(8) { width: 6%; min-width: 40px; }
+    .action-cell {
+      text-align: center;
+      padding: 4px 2px !important;
+    }
+    .row-delete-btn {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 4px 6px;
+      border-radius: 6px;
+      transition: background .15s ease;
+    }
+    .row-delete-btn:hover {
+      background: #fee;
+    }
     td[contenteditable="true"] {
       cursor: text;
     }
@@ -1065,6 +1082,21 @@
     .delivery-sign-btn:hover {
       background: var(--pink-deep);
       color: #fff;
+    }
+    .delivery-delete-btn {
+      flex-shrink: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.72rem;
+      padding: 2px 4px;
+      border-radius: 6px;
+      color: var(--muted);
+      transition: background .15s ease, color .15s ease;
+    }
+    .delivery-delete-btn:hover {
+      background: #fee;
+      color: #e85d5d;
     }
     .delivery-name {
       min-width: 0;
@@ -1572,6 +1604,121 @@
     .toast.show {
       opacity: 1;
       transform: translateX(-50%) translateY(0);
+    }
+    /* ===== 确认弹框 ===== */
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .confirm-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .confirm-dialog {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      padding: 24px 24px 20px;
+      max-width: 360px;
+      width: 88%;
+      transform: scale(0.92);
+      transition: transform .2s ease;
+    }
+    .confirm-overlay.show .confirm-dialog {
+      transform: scale(1);
+    }
+    .confirm-dialog-icon {
+      font-size: 1.6rem;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+    .confirm-dialog-message {
+      font-size: 0.88rem;
+      color: var(--ink);
+      line-height: 1.6;
+      text-align: center;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-bottom: 20px;
+    }
+    .confirm-dialog-buttons {
+      display: flex;
+      gap: 12px;
+    }
+    .confirm-dialog-btn {
+      flex: 1;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: opacity .15s ease, transform .1s ease;
+    }
+    .confirm-dialog-btn:active {
+      transform: scale(0.97);
+    }
+    .confirm-dialog-btn.cancel {
+      background: #f0f0f0;
+      color: var(--muted);
+    }
+    .confirm-dialog-btn.cancel:hover {
+      background: #e8e8e8;
+    }
+    .confirm-dialog-btn.confirm {
+      background: #e85d5d;
+      color: #fff;
+    }
+    .confirm-dialog-btn.confirm:hover {
+      background: #d94d4d;
+    }
+    /* ===== 历史输入记录删除按钮 ===== */
+    .input-log-item {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 1px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+    }
+    .input-log-item .input-log-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .log-delete-btn {
+      flex-shrink: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.7rem;
+      padding: 2px 4px;
+      border-radius: 4px;
+      color: var(--muted);
+      transition: background .15s ease, color .15s ease;
+      line-height: 1;
+    }
+    .log-delete-btn:hover {
+      background: #fee;
+      color: #e85d5d;
+    }
+    .focus-history-item {
+      position: relative;
+    }
+    .focus-history-item .log-delete-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      font-size: 0.72rem;
+      padding: 2px 6px;
     }
     body.work-mode {
       background: #ffffff !important;
@@ -2971,6 +3118,7 @@
                       <th>目的</th>
                       <th>金额</th>
                       <th>备注</th>
+                      <th>操作</th>
                     </tr>
                   </thead>
                   <tbody id="accountRows"></tbody>
@@ -3160,6 +3308,7 @@
                         <th>目的</th>
                         <th>金额</th>
                         <th>备注</th>
+                        <th>操作</th>
                       </tr>
                     </thead>
                     <tbody id="focusAccountRows"></tbody>
@@ -3264,6 +3413,17 @@
   </div>
 
   <div class="toast" id="toast">已整理</div>
+
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-dialog">
+      <div class="confirm-dialog-icon">⚠️</div>
+      <div class="confirm-dialog-message" id="confirmMessage"></div>
+      <div class="confirm-dialog-buttons">
+        <button class="confirm-dialog-btn cancel" id="confirmCancelBtn">取消</button>
+        <button class="confirm-dialog-btn confirm" id="confirmOkBtn">确定删除</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     // ===== Supabase 配置 =====
@@ -3627,6 +3787,10 @@
     let longtermDirty = false;
     let longtermEditing = false;
     const toast = document.getElementById('toast');
+    const confirmOverlay = document.getElementById('confirmOverlay');
+    const confirmMessage = document.getElementById('confirmMessage');
+    const confirmOkBtn = document.getElementById('confirmOkBtn');
+    const confirmCancelBtn = document.getElementById('confirmCancelBtn');
     const workModeBtn = document.getElementById('workModeBtn');
     const forceRefreshBtn = document.getElementById('forceRefreshBtn');
     const smileBackBtn = document.getElementById('smileBackBtn');
@@ -4244,14 +4408,17 @@
 
     function buildAccountRowsHtml() {
       return accounts.map((row, index) => {
+        const holiday = getHolidayInfo(row.date);
+        const dateDisplay = holiday ? `${row.date}(${holiday})` : row.date;
         return `<tr>
-          <td contenteditable="true" data-index="${index}" data-field="date">${row.date}</td>
+          <td contenteditable="true" data-index="${index}" data-field="date">${dateDisplay}</td>
           <td contenteditable="true" data-index="${index}" data-field="platform">${row.platform}</td>
           <td contenteditable="true" data-index="${index}" data-field="item">${row.item}</td>
           <td contenteditable="true" data-index="${index}" data-field="usage">${row.usage}</td>
           <td contenteditable="true" data-index="${index}" data-field="purpose">${row.purpose}</td>
           <td contenteditable="true" data-index="${index}" data-field="amount">¥ ${row.amount}</td>
           <td contenteditable="true" data-index="${index}" data-field="note">${row.note}</td>
+          <td class="action-cell"><button class="row-delete-btn" data-index="${index}" title="删除此行">🗑</button></td>
         </tr>`;
       }).join('');
     }
@@ -4388,6 +4555,7 @@
               <div class="delivery-item-top">
                 <span class="delivery-name">${d.item}</span>
                 <button class="delivery-sign-btn" data-index="${d.index}" data-action="receive">签收</button>
+                <button class="delivery-delete-btn" data-index="${d.index}" data-action="delete" title="删除">🗑</button>
               </div>
               <span class="delivery-platform">${d.platform}</span>
             </div>`
@@ -4453,7 +4621,7 @@
         return records.map(r => {
           const time = new Date(r.timestamp);
           const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
-          return `<div class="input-log-item"><span class="input-log-time">${timeStr}</span><span class="input-log-text">${escapeHtml(r.text)}</span></div>`;
+          return `<div class="input-log-item"><div class="input-log-content"><span class="input-log-time">${timeStr}</span><span class="input-log-text">${escapeHtml(r.text)}</span></div><button class="log-delete-btn" data-timestamp="${r.timestamp}" title="删除此条记录">🗑</button></div>`;
         }).join('');
       };
       const filterBySection = (section) => currentMonthRecords.filter(r => {
@@ -4486,6 +4654,7 @@
         return `<article class="focus-history-item">
           <time>${timeStr} · ${section}</time>
           <span>${escapeHtml(r.text)}</span>
+          <button class="log-delete-btn" data-timestamp="${r.timestamp}" title="删除此条记录">🗑</button>
         </article>`;
       }).join('');
     }
@@ -4557,6 +4726,27 @@
       toast.classList.add('show');
       window.setTimeout(() => toast.classList.remove('show'), 1800);
     }
+
+    // ===== 确认弹框 =====
+    let _confirmCallback = null;
+    function showConfirmDialog(message, onConfirm) {
+      confirmMessage.textContent = message;
+      _confirmCallback = typeof onConfirm === 'function' ? onConfirm : null;
+      confirmOverlay.classList.add('show');
+    }
+    function hideConfirmDialog() {
+      confirmOverlay.classList.remove('show');
+      _confirmCallback = null;
+    }
+    if (confirmOkBtn) confirmOkBtn.addEventListener('click', () => {
+      const cb = _confirmCallback;
+      hideConfirmDialog();
+      if (cb) cb();
+    });
+    if (confirmCancelBtn) confirmCancelBtn.addEventListener('click', hideConfirmDialog);
+    if (confirmOverlay) confirmOverlay.addEventListener('click', (e) => {
+      if (e.target === confirmOverlay) hideConfirmDialog();
+    });
 
     // ===== 语音识别 =====
     let activeRecognition = null;
@@ -4692,6 +4882,19 @@
       const newRows = [];
       const newDeliveries = [];
 
+      // ===== 更正逻辑：识别到更正意图时，修改最近一条匹配记录 =====
+      const isCorrection = /更正|修改|不对|不是|错了|应该是|改一下|更正一下/.test(text);
+      if (isCorrection && accounts.length > 0) {
+        const corrected = tryCorrectLastEntry(text);
+        if (corrected) {
+          renderAccounts();
+          renderDeliveries();
+          saveAppData();
+          showToast('已更正最近一条记录');
+          return;
+        }
+      }
+
       if (/工资|收入|奖金|副业|红包/.test(text) && !/买|购买|下单|消费|花了/.test(text)) {
         const match = text.match(/工资(\d+(?:\.\d+)?)|收入(\d+(?:\.\d+)?)|奖金(\d+(?:\.\d+)?)|副业收入(\d+(?:\.\d+)?)|红包(\d+(?:\.\d+)?)/);
         const amount = match ? (match[1] || match[2] || match[3] || match[4] || match[5]) : '待确认';
@@ -4741,6 +4944,46 @@
       renderDeliveries();
       saveAppData();
       if (!/退|退款|退货/.test(text)) showToast('已根据输入内容整理到表格');
+    }
+
+    // 尝试更正最近一条记账记录
+    function tryCorrectLastEntry(text) {
+      if (!accounts.length) return false;
+      const lastRow = accounts[accounts.length - 1];
+      let modified = false;
+
+      // 更正金额
+      const amountMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:元|块|块钱)/);
+      if (amountMatch) {
+        lastRow.amount = amountMatch[1];
+        modified = true;
+      }
+      // 更正日期
+      const newDate = getDateFromText(text);
+      if (newDate !== '无日期') {
+        lastRow.date = newDate;
+        modified = true;
+      }
+      // 更正平台
+      const platformNames = ['淘宝', '天猫', '京东', '拼多多', 'PDD', '抖音', '小红书', '闲鱼', '1688', '阿里巴巴', '美团', '饿了么'];
+      for (const p of platformNames) {
+        if (new RegExp(p, 'i').test(text) && lastRow.platform !== p) {
+          lastRow.platform = p === 'PDD' ? 'PDD' : p;
+          modified = true;
+          break;
+        }
+      }
+      // 更正商品名称
+      const itemMatch = text.match(/(?:买了?|购买?)([\u4e00-\u9fa5\w]{2,10})/);
+      if (itemMatch && itemMatch[1]) {
+        lastRow.item = itemMatch[1];
+        modified = true;
+      }
+
+      if (modified) {
+        lastRow.note = (lastRow.note || '') + ' · 已更正';
+      }
+      return modified;
     }
 
     function splitAccountEntries(text) {
@@ -4874,16 +5117,64 @@
         date.setDate(date.getDate() - 1);
         return `${date.getMonth() + 1}月${date.getDate()}日`;
       }
-      const dateMatch = text.match(/(\d{1,2}[月.]\d{1,2}[日号]?|\d{1,2}月\d{1,2}日|每周[一二三四五六日天])/);
-      if (!dateMatch) return '无日期';
-      const raw = dateMatch[0].replace('号', '日');
-      if (/^每周[一二三四五六日天]$/.test(raw)) return getWeeklyReminderDate(raw);
-      if (/^\d{1,2}\.\d{1,2}$/.test(raw)) {
-        const parts = raw.split('.');
-        return `${parts[0]}月${parts[1]}日`;
+      if (/前天/.test(text)) {
+        const date = new Date();
+        date.setDate(date.getDate() - 2);
+        return `${date.getMonth() + 1}月${date.getDate()}日`;
       }
-      if (/^\d{1,2}月\d{1,2}$/.test(raw)) return `${raw}日`;
-      return raw;
+      const dateMatch = text.match(/(\d{1,2})月(\d{1,2})[日号]?/);
+      if (dateMatch) {
+        const month = parseInt(dateMatch[1], 10);
+        const day = parseInt(dateMatch[2], 10);
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+          return `${month}月${day}日`;
+        }
+        // 无效日期，回退到今天
+        const now = new Date();
+        return `${now.getMonth() + 1}月${now.getDate()}日`;
+      }
+      const dotMatch = text.match(/(\d{1,2})\.(\d{1,2})/);
+      if (dotMatch) {
+        const month = parseInt(dotMatch[1], 10);
+        const day = parseInt(dotMatch[2], 10);
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+          return `${month}月${day}日`;
+        }
+        const now = new Date();
+        return `${now.getMonth() + 1}月${now.getDate()}日`;
+      }
+      const weekMatch = text.match(/每周[一二三四五六日天]/);
+      if (weekMatch) return getWeeklyReminderDate(weekMatch[0]);
+      return '无日期';
+    }
+
+    // 中国法定节假日判断
+    function getHolidayInfo(dateText) {
+      const dateObj = getAccountDateObject(dateText);
+      if (!dateObj) return null;
+      const month = dateObj.getMonth() + 1;
+      const day = dateObj.getDate();
+      const holidays = [
+        { m: 1, d: 1, name: '元旦' },
+        { m: 2, d: 14, name: '情人节' },
+        { m: 3, d: 8, name: '妇女节' },
+        { m: 3, d: 12, name: '植树节' },
+        { m: 4, d: 4, name: '清明节' },
+        { m: 5, d: 1, name: '劳动节' },
+        { m: 5, d: 4, name: '青年节' },
+        { m: 6, d: 1, name: '儿童节' },
+        { m: 7, d: 1, name: '建党节' },
+        { m: 8, d: 1, name: '建军节' },
+        { m: 9, d: 10, name: '教师节' },
+        { m: 10, d: 1, name: '国庆节' },
+        { m: 10, d: 2, name: '国庆节' },
+        { m: 10, d: 3, name: '国庆节' },
+        { m: 12, d: 25, name: '圣诞节' },
+      ];
+      const holiday = holidays.find(h => h.m === month && h.d === day);
+      if (holiday) return holiday.name;
+      // 端午、中秋、春节等农历节日暂不精确计算
+      return null;
     }
 
     function cleanText(text) {
@@ -5732,9 +6023,23 @@
       }
     });
     pendingDeliveriesEl.addEventListener('click', (event) => {
-      const btn = event.target.closest('.delivery-sign-btn');
-      if (btn && btn.dataset.action === 'receive') {
-        receiveDelivery(Number(btn.dataset.index));
+      const signBtn = event.target.closest('.delivery-sign-btn');
+      if (signBtn && signBtn.dataset.action === 'receive') {
+        receiveDelivery(Number(signBtn.dataset.index));
+        return;
+      }
+      const delBtn = event.target.closest('.delivery-delete-btn');
+      if (delBtn && delBtn.dataset.action === 'delete') {
+        const idx = Number(delBtn.dataset.index);
+        const item = pendingDeliveries[idx];
+        if (!item) return;
+        const info = `${item.platform} ${item.item}`;
+        showConfirmDialog(`确定删除这条快递记录吗？\n\n${info}`, () => {
+          pendingDeliveries.splice(idx, 1);
+          renderDeliveries();
+          saveAppData();
+          showToast('已删除该条快递记录');
+        });
       }
     });
     document.querySelector('#accounting .table-wrap').addEventListener('dblclick', openTableFocus);
@@ -5777,6 +6082,49 @@
         renderAccounts();
       }
     }, true);
+    // 记账表格删除按钮
+    function handleAccountDelete(event) {
+      const btn = event.target.closest('.row-delete-btn');
+      if (!btn) return;
+      const index = Number(btn.dataset.index);
+      if (Number.isNaN(index) || !accounts[index]) return;
+      const row = accounts[index];
+      const rowInfo = `${row.date} ${row.platform} ${row.item} ¥${row.amount}`;
+      showConfirmDialog(`确定删除这条记录吗？\n\n${rowInfo}`, () => {
+        accounts.splice(index, 1);
+        renderAccounts();
+        saveAppData();
+        showToast('已删除该条记录');
+      });
+    }
+    accountRows.addEventListener('click', handleAccountDelete);
+    focusAccountRows.addEventListener('click', handleAccountDelete);
+
+    // 历史输入记录删除按钮
+    function handleInputLogDelete(event) {
+      const btn = event.target.closest('.log-delete-btn');
+      if (!btn) return;
+      const ts = btn.dataset.timestamp;
+      if (!ts) return;
+      const record = monthlyInputRecords.find(r => r.timestamp === ts);
+      if (!record) return;
+      const time = new Date(record.timestamp);
+      const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+      const preview = (record.text || '').slice(0, 30);
+      showConfirmDialog(`确定删除这条输入记录吗？\n\n${timeStr}\n${preview}${record.text.length > 30 ? '...' : ''}`, () => {
+        const idx = monthlyInputRecords.findIndex(r => r.timestamp === ts);
+        if (idx >= 0) {
+          monthlyInputRecords.splice(idx, 1);
+          renderInputRecords();
+          saveAppData();
+          showToast('已删除该条输入记录');
+        }
+      });
+    }
+    if (accountingInputLog) accountingInputLog.addEventListener('click', handleInputLogDelete);
+    if (deliveryInputLog) deliveryInputLog.addEventListener('click', handleInputLogDelete);
+    if (workInputLog) workInputLog.addEventListener('click', handleInputLogDelete);
+    if (focusMonthlyInputLog) focusMonthlyInputLog.addEventListener('click', handleInputLogDelete);
     quickInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();

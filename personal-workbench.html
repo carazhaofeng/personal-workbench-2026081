@@ -1016,6 +1016,25 @@
       overflow-x: auto;
       overflow-y: hidden;
     }
+    .pickup-groups {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .pickup-panel {
+      max-height: 260px;
+    }
+    .pickup-item .pickup-code {
+      font-size: 0.7rem;
+      color: var(--brand);
+      font-weight: 600;
+      background: var(--accent2);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
     .delivery-group {
       min-height: 0;
       display: grid;
@@ -2321,6 +2340,14 @@
     body.work-mode .desc {
       color: #999999 !important;
     }
+    body.work-mode .pickup-code {
+      background: transparent !important;
+      color: #999999 !important;
+      font-weight: 400 !important;
+    }
+    body.work-mode .pickup-panel {
+      max-height: none !important;
+    }
     body.smile-mode {
       background:
         radial-gradient(circle at 18% 22%, rgba(0, 120, 212, .06), transparent 38%),
@@ -2891,6 +2918,13 @@
         grid-template-columns: 1fr;
         overflow: visible;
       }
+      .pickup-groups {
+        grid-template-columns: 1fr;
+        overflow: visible;
+      }
+      .pickup-panel {
+        max-height: none;
+      }
       .delivery-group {
         max-height: 300px;
         overflow-y: auto;
@@ -3314,6 +3348,10 @@
                 <div class="delivery-list" id="receivedDeliveries"></div>
               </article>
             </div>
+            <article class="card delivery-panel pickup-panel">
+              <h3>代取件</h3>
+              <div class="delivery-list" id="pickupList"></div>
+            </article>
             <article class="card input-log-card">
               <h3>历史输入</h3>
               <div class="input-log-list" id="deliveryInputLog"></div>
@@ -3570,7 +3608,7 @@
           longtermTrash.splice(0, longtermTrash.length, ...ltt.map(r => ({ title: r.title, content: r.content, deletedAt: r.deleted_at })));
         }
         window.localStorage.setItem(APP_DATA_STORAGE_KEY, JSON.stringify({
-          accounts, pendingDeliveries, receivedDeliveries, monthlyInputRecords,
+          accounts, pendingDeliveries, receivedDeliveries, pickupList, monthlyInputRecords,
           workItems, memoItems, longtermNotes, longtermTrash
         }));
         renderAll();
@@ -3618,7 +3656,7 @@
 
     function renderAll() {
       renderWork(); renderMemo(); renderFinanceNotes();
-      renderLongtermNotes(); renderAccounts(); renderDeliveries();
+      renderLongtermNotes(); renderAccounts(); renderDeliveries(); renderPickupList();
       renderInputRecords(); renderHomeReminders();
       renderHomeMonthSpend(); renderHomeDeliveryCount();
       initQuote(); fitQuoteToOneLine(); fetchChengduWeather();
@@ -3680,6 +3718,7 @@
       { date: '7月30日', platform: '淘宝', item: '纯棉布料', location: '视高', amount: '25.5', received: false }
     ];
     let receivedDeliveries = [];
+    let pickupList = [];
 
     // Monthly input records: stores all homepage inputs with timestamps for monthly auto-clear
     let monthlyInputRecords = [];
@@ -3690,6 +3729,7 @@
         accounts,
         pendingDeliveries,
         receivedDeliveries,
+        pickupList,
         monthlyInputRecords,
         workItems,
         memoItems,
@@ -3716,6 +3756,7 @@
         if (Array.isArray(data.accounts)) accounts = data.accounts;
         if (Array.isArray(data.pendingDeliveries)) pendingDeliveries = data.pendingDeliveries;
         if (Array.isArray(data.receivedDeliveries)) receivedDeliveries = data.receivedDeliveries;
+        if (Array.isArray(data.pickupList)) pickupList = data.pickupList;
         if (Array.isArray(data.monthlyInputRecords)) monthlyInputRecords = data.monthlyInputRecords;
         if (Array.isArray(data.workItems)) {
           workItems.splice(0, workItems.length, ...data.workItems.map(item => ({ ...item, done: Boolean(item.done), completedAt: item.completedAt || '' })));
@@ -3840,6 +3881,7 @@
     const workExcelBody = document.getElementById('workExcelBody');
     const pendingDeliveriesEl = document.getElementById('pendingDeliveries');
     const receivedDeliveriesEl = document.getElementById('receivedDeliveries');
+    const pickupListEl = document.getElementById('pickupList');
     const quickAccountInput = document.getElementById('quickAccountInput');
     const accountingInputLog = document.getElementById('accountingInputLog');
     const deliveryInputLog = document.getElementById('deliveryInputLog');
@@ -4587,10 +4629,11 @@
             `<div class="delivery-item">
               <div class="delivery-item-top">
                 <span class="delivery-name">${d.item}</span>
+                ${d.pickupCode ? `<span class="pickup-code">取件码: ${d.pickupCode}</span>` : ''}
                 <button class="delivery-sign-btn" data-index="${d.index}" data-action="receive">签收</button>
                 <button class="delivery-delete-btn" data-index="${d.index}" data-action="delete" title="删除">🗑</button>
               </div>
-              <span class="delivery-platform">${d.platform}</span>
+              <span class="delivery-platform">${d.platform}${d.pickupLocation ? ' · ' + d.pickupLocation : ''}</span>
             </div>`
           ).join('')
           : '<div class="delivery-empty">暂无待收</div>';
@@ -4627,6 +4670,50 @@
       renderHomeDeliveryCount();
       saveAppData();
       showToast(`已签收：${item.item}`);
+    }
+
+    // ===== 代取件列表渲染 =====
+    const PICKUP_LOCATION_ORDER = ['公司', '万科兔喜', '万科菜鸟', '视高申通', '视高邮政', '视高中通', '视高极兔', '视高喵站'];
+    function renderPickupList() {
+      if (!pickupListEl) return;
+      const pending = pickupList.filter(p => !p.received);
+      if (!pending.length) {
+        pickupListEl.innerHTML = '<div class="delivery-empty">暂无待取件</div>';
+        return;
+      }
+      pickupListEl.innerHTML = `<div class="pickup-groups">${PICKUP_LOCATION_ORDER.map(location => {
+        const items = pending
+          .map((p, index) => ({ ...p, index }))
+          .filter(p => p.pickupLocation === location);
+        const listHtml = items.length
+          ? items.map(p =>
+            `<div class="delivery-item pickup-item">
+              <div class="delivery-item-top">
+                <span class="delivery-name">${p.item}</span>
+                ${p.pickupCode ? `<span class="pickup-code">取件码: ${p.pickupCode}</span>` : ''}
+                <button class="delivery-sign-btn" data-index="${p.index}" data-action="pickup">已取</button>
+                <button class="delivery-delete-btn" data-index="${p.index}" data-action="deletePickup" title="删除">🗑</button>
+              </div>
+              <span class="delivery-platform">${p.platform}</span>
+            </div>`
+          ).join('')
+          : '';
+        if (!items.length) return '';
+        return `<section class="delivery-group">
+          <div class="delivery-group-title">${location} (${items.length})</div>
+          <div class="delivery-list">${listHtml}</div>
+        </section>`;
+      }).join('')}</div>`;
+    }
+
+    function pickupItem(index) {
+      const item = pickupList[index];
+      if (!item) return;
+      item.received = true;
+      item.receivedAt = new Date().toISOString();
+      renderPickupList();
+      saveAppData();
+      showToast(`已取件：${item.item}`);
     }
 
     function recordInput(text, section = 'all') {
@@ -4973,8 +5060,45 @@
         if (!exists) pendingDeliveries.push(d);
       });
 
+      // ===== 取货码/自提点识别 =====
+      const pickupCode = detectPickupCode(text);
+      const pickupLocation = detectPickupLocation(text);
+      if (pickupCode || pickupLocation) {
+        // 尝试匹配已有的待收快递记录（按商品名或平台匹配）
+        let matchedDelivery = null;
+        if (newDeliveries.length > 0) {
+          // 优先匹配本次新增的快递
+          const lastNew = newDeliveries[newDeliveries.length - 1];
+          matchedDelivery = pendingDeliveries.find(p => p.item === lastNew.item && p.platform === lastNew.platform);
+        }
+        if (!matchedDelivery) {
+          // 尝试用文本中的商品名匹配
+          const itemMatch = text.match(/(?:买了?|购买?)([\u4e00-\u9fa5\w]{2,10})/);
+          if (itemMatch) {
+            matchedDelivery = pendingDeliveries.find(p => p.item.includes(itemMatch[1]) || itemMatch[1].includes(p.item));
+          }
+        }
+        if (matchedDelivery) {
+          if (pickupCode) matchedDelivery.pickupCode = pickupCode;
+          if (pickupLocation) matchedDelivery.pickupLocation = pickupLocation;
+        } else {
+          // 没有匹配到已有快递，作为独立取件记录
+          if (pickupLocation) {
+            const item = detectItem(text);
+            const platform = detectPlatform(text);
+            const date = getDateFromText(text) === '无日期' ? (() => { const n = new Date(); return `${n.getMonth() + 1}月${n.getDate()}日`; })() : getDateFromText(text);
+            const newPickup = { item, platform, pickupLocation, date, received: false };
+            if (pickupCode) newPickup.pickupCode = pickupCode;
+            // 避免重复
+            const exists = pickupList.some(p => p.item === newPickup.item && p.pickupLocation === newPickup.pickupLocation && p.date === newPickup.date);
+            if (!exists) pickupList.push(newPickup);
+          }
+        }
+      }
+
       renderAccounts();
       renderDeliveries();
+      renderPickupList();
       saveAppData();
       if (!/退|退款|退货/.test(text)) showToast('已根据输入内容整理到表格');
     }
@@ -5094,6 +5218,48 @@
       if (/公司/.test(text) && /寄|送|发/.test(text)) return '公司';
       if (/万科/.test(text) && /寄|送|发/.test(text)) return '万科';
       if (/视高/.test(text) && /寄|送|发/.test(text)) return '视高';
+      return null;
+    }
+
+    // 自提点识别：8种自提点
+    const PICKUP_LOCATIONS = [
+      '万科兔喜', '万科菜鸟', '视高申通', '视高邮政', '视高中通', '视高极兔', '视高喵站',
+      '公司', '公司前台'
+    ];
+    function detectPickupLocation(text) {
+      // 按长度从长到短匹配，避免"视高"匹配到"视高申通"的子串
+      const sorted = [...PICKUP_LOCATIONS].sort((a, b) => b.length - a.length);
+      for (const loc of sorted) {
+        if (text.includes(loc)) {
+          return loc === '公司前台' ? '公司' : loc;
+        }
+      }
+      // 模糊匹配
+      if (/兔喜/.test(text)) return '万科兔喜';
+      if (/菜鸟/.test(text) && /万科/.test(text)) return '万科菜鸟';
+      if (/菜鸟驿站/.test(text)) return '万科菜鸟';
+      if (/申通/.test(text) && /视高/.test(text)) return '视高申通';
+      if (/邮政/.test(text) && /视高/.test(text)) return '视高邮政';
+      if (/中通/.test(text) && /视高/.test(text)) return '视高中通';
+      if (/极兔/.test(text) && /视高/.test(text)) return '视高极兔';
+      if (/喵站/.test(text) && /视高/.test(text)) return '视高喵站';
+      return null;
+    }
+
+    // 取货码识别
+    function detectPickupCode(text) {
+      // 取货码/取件码/提货码 + 数字（支持字母数字混合，如 A1234, 1-2-3）
+      const patterns = [
+        /(?:取货码|取件码|提货码|取件号|提货号)\s*[:：]?\s*([A-Za-z0-9\-]+)/,
+        /(?:取货码|取件码|提货码|取件号|提货号)\s*为\s*([A-Za-z0-9\-]+)/,
+        /(?:码|code)\s*[:：]?\s*([A-Za-z0-9]{4,8})/,
+        /取件码([A-Za-z0-9]{4,8})/,
+        /货号\s*[:：]?\s*([A-Za-z0-9\-]+)/,
+      ];
+      for (const p of patterns) {
+        const m = text.match(p);
+        if (m && m[1]) return m[1].toUpperCase();
+      }
       return null;
     }
 
@@ -5222,12 +5388,12 @@
       }
 
       let updated = [];
-      const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
+      const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|喵站|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
       if (hasAccountInfo) {
         aiOrganize(text);
         recordInput(text, 'accounting');
         updated.push('生活记账');
-        if (/寄到|寄到了|送到|快递/.test(text)) {
+        if (/寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|喵站|自提/.test(text)) {
           recordInput(text, 'delivery');
           updated.push('代收快递');
         }
@@ -5271,12 +5437,12 @@
       }
 
       let updated = [];
-      const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
+      const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|喵站|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
       if (hasAccountInfo) {
         aiOrganize(text);
         recordInput(text, 'accounting');
         updated.push('生活记账');
-        if (/寄到|寄到了|送到|快递/.test(text)) {
+        if (/寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|喵站|自提/.test(text)) {
           recordInput(text, 'delivery');
           updated.push('代收快递');
         }
@@ -6075,6 +6241,27 @@
         });
       }
     });
+    // 代取件按钮事件
+    if (pickupListEl) pickupListEl.addEventListener('click', (event) => {
+      const pickupBtn = event.target.closest('.delivery-sign-btn');
+      if (pickupBtn && pickupBtn.dataset.action === 'pickup') {
+        pickupItem(Number(pickupBtn.dataset.index));
+        return;
+      }
+      const delBtn = event.target.closest('.delivery-delete-btn');
+      if (delBtn && delBtn.dataset.action === 'deletePickup') {
+        const idx = Number(delBtn.dataset.index);
+        const item = pickupList[idx];
+        if (!item) return;
+        const info = `${item.pickupLocation} ${item.item}`;
+        showConfirmDialog(`确定删除这条取件记录吗？\n\n${info}`, () => {
+          pickupList.splice(idx, 1);
+          renderPickupList();
+          saveAppData();
+          showToast('已删除该条取件记录');
+        });
+      }
+    });
     document.querySelector('#accounting .table-wrap').addEventListener('dblclick', openTableFocus);
     accountRows.addEventListener('input', (event) => {
       const cell = event.target.closest('td[contenteditable="true"]');
@@ -6334,6 +6521,7 @@
     renderLongtermNotes();
     renderAccounts();
     renderDeliveries();
+    renderPickupList();
     renderInputRecords();
     initQuote();
     fitQuoteToOneLine();

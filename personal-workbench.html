@@ -19,31 +19,31 @@
   </style>
   <style>
     :root {
-      --bg: #fff9e6;
-      --bg2: #fff5d6;
-      --ink: #5a3a2a;
-      --muted: #8a6a4a;
-      --rule: #e8c896;
-      --accent: #d4a574;
-      --accent2: #f5e6c8;
+      --bg: #eef5e4;
+      --bg2: #e6f0da;
+      --ink: #2d3a20;
+      --muted: #5a6b48;
+      --rule: #b8cc96;
+      --accent: #7a9a56;
+      --accent2: #d6e4c0;
       --surface: #ffffff;
-      --surface-soft: #fffcf5;
-      --brand: #c84a3a;
-      --pink-soft: #f5e6c8;
-      --pink-light: #fff5e6;
-      --pink-deep: #c84a3a;
-      --yellow-soft: #fff2cf;
-      --yellow-deep: #9a7a46;
-      --purple-soft: #eee4ff;
-      --purple-glass: rgba(238, 228, 255, 0.78);
-      --purple-deep: #8366a8;
+      --surface-soft: #f8fcf4;
+      --brand: #4a7a32;
+      --pink-soft: #d6e4c0;
+      --pink-light: #eef5e4;
+      --pink-deep: #4a7a32;
+      --yellow-soft: #e8f0d0;
+      --yellow-deep: #5a6b38;
+      --purple-soft: #e0e8d6;
+      --purple-glass: rgba(224, 232, 214, 0.78);
+      --purple-deep: #6a7a56;
       --green-soft: #dcf6e4;
       --green-glass: rgba(220, 246, 228, 0.78);
-      --green-deep: #4d8a62;
+      --green-deep: #4a7a32;
       --white-glass: rgba(255, 255, 255, 0.74);
-      --pink-glass: rgba(255, 245, 230, 0.78);
-      --shadow: rgba(200, 74, 58, 0.12);
-      --shadow-soft: rgba(200, 74, 58, 0.07);
+      --pink-glass: rgba(238, 245, 228, 0.78);
+      --shadow: rgba(74, 122, 50, 0.12);
+      --shadow-soft: rgba(74, 122, 50, 0.07);
       --blur: blur(14px);
       --font: 'Instrument Sans', system-ui, sans-serif;
       --radius-lg: 28px;
@@ -60,8 +60,8 @@
       font-family: var(--font);
       color: var(--ink);
       background:
-        radial-gradient(circle at top left, rgba(255, 230, 180, .55), transparent 34%),
-        radial-gradient(circle at bottom right, rgba(220, 246, 228, .35), transparent 30%),
+        radial-gradient(circle at top left, rgba(200, 224, 168, .55), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(180, 210, 150, .35), transparent 30%),
         linear-gradient(135deg, var(--bg), var(--bg2));
       line-height: 1.42;
     }
@@ -304,8 +304,8 @@
       animation: voice-pulse 1.2s ease-in-out infinite;
     }
     @keyframes voice-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(200, 74, 58, 0.4); }
-      50% { box-shadow: 0 0 0 8px rgba(200, 74, 58, 0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(74, 122, 50, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(74, 122, 50, 0); }
     }
     .voice-input-wrap {
       display: flex;
@@ -607,6 +607,12 @@
       max-height: 220px;
       resize: vertical;
     }
+    .home-capture-card textarea::placeholder {
+      color: var(--muted);
+      opacity: 0.5;
+      font-size: 0.88rem;
+      line-height: 1.8;
+    }
     .home-info-stack {
       min-height: 0;
       display: grid;
@@ -779,7 +785,7 @@
       border-color: rgba(120, 120, 120, .22);
     }
     .reminder-delete-btn {
-      border: 1px solid rgba(200, 74, 58, .24);
+      border: 1px solid rgba(74, 122, 50, .24);
       border-radius: 999px;
       background: rgba(255, 255, 255, .78);
       color: var(--pink-deep);
@@ -3298,7 +3304,7 @@
             <article class="card home-capture-card">
               <h3>快速输入</h3>
               <div class="voice-input-wrap">
-                <textarea id="homeQuickInput" placeholder="输入一句话，自动识别分配到生活记账、提醒、代收快递…&#10;例如：今天在淘宝买了螺丝贴，花了16.74，寄到视高&#10;坐地铁消费3元 / 门店买面包消费5元 / 水电费30元"></textarea>
+                <textarea id="homeQuickInput" placeholder="我的消费：时间/购物平台/支出项目/支付卡/收货地址/金额/&#10;我的提醒：工作，生活/日期/事项/&#10;待取快递：商品/取件码/快递站"></textarea>
                 <button class="voice-btn" data-target="homeQuickInput" title="语音输入">😃</button>
               </div>
               <button class="soft-button" id="homeQuickBtn">识别并分配</button>
@@ -4049,6 +4055,28 @@
       migrate(pendingDeliveries);
       migrate(receivedDeliveries);
       migrate(pickupList);
+
+      // 绿韵学府记录重新识别
+      const reIdentify = (arr) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(item => {
+          if (!item) return;
+          const text = item.rawText || item.item || '';
+          if (/绿韵学府/.test(text)) {
+            const newLoc = detectPickupLocation(text);
+            if (newLoc && item.pickupLocation !== newLoc) {
+              item.pickupLocation = newLoc;
+            }
+            // 绿韵学府的兔喜：如果之前被错误识别为万科兔喜，改为待确认
+            if (/兔喜/.test(text) && item.pickupLocation === '万科兔喜') {
+              item.pickupLocation = '待确认';
+            }
+          }
+        });
+      };
+      reIdentify(pendingDeliveries);
+      reIdentify(receivedDeliveries);
+      reIdentify(pickupList);
     }
 
     function restoreAccountsFromDeliveries() {
@@ -5416,7 +5444,7 @@
 
           const deliveryLocation = detectDeliveryLocation(entry.text);
           if (deliveryLocation) {
-            newDeliveries.push({ date, platform, item, location: deliveryLocation, amount, received: false });
+            newDeliveries.push({ date, platform, item, location: deliveryLocation, amount, received: false, rawText: text });
           }
         });
       }
@@ -5480,7 +5508,7 @@
           }
           const platform = detectPlatform(text);
           const date = getDateFromText(text) === '无日期' ? (() => { const n = new Date(); return `${n.getMonth() + 1}月${n.getDate()}日`; })() : getDateFromText(text);
-          const newPickup = { item, platform, pickupLocation: resolvedLocation || '待确认', date, received: false };
+          const newPickup = { item, platform, pickupLocation: resolvedLocation || '待确认', date, received: false, rawText: text };
           newPickup.pickupCode = pickupCode;
           // 避免重复
           const exists = pickupList.some(p => p.item === newPickup.item && p.pickupLocation === newPickup.pickupLocation && p.date === newPickup.date);
@@ -5625,6 +5653,15 @@
       '公司', '公司前台'
     ];
     function detectPickupLocation(text) {
+      // 绿韵学府特殊处理：包含"绿韵学府"的兔喜不识别为万科兔喜
+      if (/绿韵学府/.test(text)) {
+        if (/中通/.test(text)) return '视高中通';
+        if (/申通/.test(text)) return '视高申通';
+        if (/邮政/.test(text)) return '视高邮政';
+        if (/极兔/.test(text)) return '视高极兔';
+        // 绿韵学府的兔喜不识别为万科兔喜，返回null或待确认
+        if (/兔喜/.test(text)) return null;
+      }
       // 按长度从长到短匹配，避免"视高"匹配到"视高申通"的子串
       const sorted = [...PICKUP_LOCATIONS].sort((a, b) => b.length - a.length);
       for (const loc of sorted) {
@@ -5885,13 +5922,75 @@
     }
 
     function distributeHomeInput() {
-      const text = cleanText(homeQuickInput.value);
+      const rawValue = homeQuickInput.value;
+      const text = cleanText(rawValue);
       if (!text) {
         showToast('先输入一点内容吧');
         return;
       }
 
       let updated = [];
+
+      // ===== 按前缀格式识别：支持"我的消费：""我的提醒：""待取快递："分行输入 =====
+      const lines = rawValue.split(/\n/).map(l => l.trim()).filter(Boolean);
+      let hasPrefixFormat = false;
+
+      for (const line of lines) {
+        const cleaned = cleanText(line);
+        if (!cleaned) continue;
+
+        // 消费行
+        if (/^我的消费[：:]/.test(cleaned)) {
+          hasPrefixFormat = true;
+          const content = cleaned.replace(/^我的消费[：:]\s*/, '');
+          if (content && !/^[\/时间购物平台支出项目支付卡收货地址金额]+$/.test(content.replace(/[\/、，,\s]/g, ''))) {
+            aiOrganize(content);
+            recordInput(content, 'accounting');
+            updated.push('生活记账');
+          }
+          continue;
+        }
+
+        // 提醒行
+        if (/^我的提醒[：:]/.test(cleaned)) {
+          hasPrefixFormat = true;
+          const content = cleaned.replace(/^我的提醒[：:]\s*/, '');
+          if (content && !/^[\/工作生活日期事项]+$/.test(content.replace(/[\/、，,\s]/g, ''))) {
+            const date = getDateFromText(content);
+            workItems.push({ date: getWeeklyReminderDate(content) || (date === '无日期' ? (() => { const n = new Date(); return `${n.getMonth() + 1}月${n.getDate()}日`; })() : date), text: content, done: false });
+            renderWork();
+            recordInput(content, 'work');
+            updated.push('工作提醒');
+          }
+          continue;
+        }
+
+        // 快递行
+        if (/^待取快递[：:]/.test(cleaned)) {
+          hasPrefixFormat = true;
+          const content = cleaned.replace(/^待取快递[：:]\s*/, '');
+          if (content && !/^[\/商品取件码快递站]+$/.test(content.replace(/[\/、，,\s]/g, ''))) {
+            aiOrganize(content);
+            recordInput(content, 'delivery');
+            updated.push('代收快递');
+          }
+          continue;
+        }
+      }
+
+      // 如果使用了前缀格式，直接结束
+      if (hasPrefixFormat) {
+        if (!updated.length) {
+          showToast('未识别到有效内容，请按照提示格式填写');
+          return;
+        }
+        homeQuickInput.value = '';
+        saveAppData();
+        showToast(`已更新到：${Array.from(new Set(updated)).join('、')}`);
+        return;
+      }
+
+      // ===== 兼容原有自由输入逻辑 =====
       const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|欢喵|喵站|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
       if (hasAccountInfo) {
         aiOrganize(text);

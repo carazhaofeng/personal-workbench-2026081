@@ -3253,6 +3253,8 @@
         </div>
         <div class="auth-logged-in" id="authLoggedIn" style="display:none;">
           <span class="auth-email" id="authUserEmail"></span>
+          <span id="syncStatus" style="font-size:11px; color:#999; margin-left:4px;"></span>
+          <button class="ghost-button" id="authSyncBtn" style="padding:2px 8px; font-size:11px; cursor:pointer;">同步</button>
           <button class="ghost-button" id="authLogoutBtn">退出</button>
         </div>
       </div>
@@ -3729,6 +3731,7 @@
         loggedOut.style.display = 'none';
         loggedIn.style.display = 'flex';
         if (userEmail) userEmail.textContent = currentUser.email || '已登录';
+        updateSyncStatus('', '等待同步');
       } else {
         loggedOut.style.display = 'flex';
         loggedIn.style.display = 'none';
@@ -3769,9 +3772,33 @@
     }
 
     // ===== 云端同步 =====
+    let lastSyncTime = null;
+
+    function updateSyncStatus(state, msg) {
+      const el = document.getElementById('syncStatus');
+      if (!el) return;
+      if (state === 'syncing') {
+        el.textContent = '同步中...';
+        el.style.color = '#999';
+      } else if (state === 'success') {
+        const t = new Date();
+        const ts = t.getHours().toString().padStart(2,'0') + ':' + t.getMinutes().toString().padStart(2,'0') + ':' + t.getSeconds().toString().padStart(2,'0');
+        el.textContent = '已同步 ' + ts;
+        el.style.color = '#4CAF50';
+        lastSyncTime = Date.now();
+      } else if (state === 'error') {
+        el.textContent = '同步失败';
+        el.style.color = '#f44336';
+      } else {
+        el.textContent = msg || '';
+        el.style.color = '#999';
+      }
+    }
+
     async function syncFromCloud() {
       if (!currentUser || !_supabase || isSyncing) return;
       isSyncing = true;
+      updateSyncStatus('syncing');
       try {
         const uid = currentUser.id;
         const [{ data: acc }, { data: del }, { data: rem }, { data: ltn }, { data: ltt }] = await Promise.all([
@@ -3781,20 +3808,20 @@
           _supabase.from('longterm_notes').select('*').eq('user_id', uid).order('sort_order'),
           _supabase.from('longterm_trash').select('*').eq('user_id', uid).order('deleted_at', { ascending: false })
         ]);
-        if (acc && acc.length) { accounts = acc.map(r => ({ date: r.date, platform: r.platform, item: r.item, usage: r.usage, purpose: r.purpose, amount: r.amount, flow: r.flow, note: r.note })); }
-        if (del && del.length) {
+        if (acc) { accounts = acc.map(r => ({ date: r.date, platform: r.platform, item: r.item, usage: r.usage, purpose: r.purpose, amount: r.amount, flow: r.flow, note: r.note })); }
+        if (del) {
           pendingDeliveries = del.filter(r => !r.received).map(r => ({ date: r.date, platform: r.platform, item: r.item, location: r.location, amount: r.amount, received: false, pickupLocation: r.pickup_location || r.pickupLocation || '', pickupCode: r.pickup_code || r.pickupCode || '' }));
           receivedDeliveries = del.filter(r => r.received).map(r => ({ date: r.date, platform: r.platform, item: r.item, location: r.location, amount: r.amount, received: true, receivedAt: r.received_at, pickupLocation: r.pickup_location || r.pickupLocation || '', pickupCode: r.pickup_code || r.pickupCode || '' }));
         }
-        if (rem && rem.length) {
+        if (rem) {
           workItems = rem.filter(r => r.type === 'work').map(r => ({ date: r.date, text: r.text, done: r.done, completedAt: r.completed_at || '' }));
           memoItems = rem.filter(r => r.type === 'memo').map(r => ({ date: r.date, text: r.text, done: r.done, home: true, completedAt: r.completed_at || '' }));
         }
-        if (ltn && ltn.length) {
+        if (ltn) {
           longtermNotes.splice(0, longtermNotes.length, ...ltn.map(r => ({ title: r.title, content: r.content })));
           activeLongtermIndex = 0;
         }
-        if (ltt && ltt.length) {
+        if (ltt) {
           longtermTrash.splice(0, longtermTrash.length, ...ltt.map(r => ({ title: r.title, content: r.content, deletedAt: r.deleted_at })));
         }
         migratePickupLocations();
@@ -3803,10 +3830,10 @@
           workItems, memoItems, longtermNotes, longtermTrash
         }));
         renderAll();
-        showToast('云端数据已同步');
+        updateSyncStatus('success');
       } catch (e) {
         console.error('同步失败', e);
-        showToast('同步失败，使用本地数据');
+        updateSyncStatus('error');
       } finally {
         isSyncing = false;
       }
@@ -3815,21 +3842,32 @@
     async function pushToCloud(table, rows, transform) {
       if (!currentUser || !_supabase) return;
       const uid = currentUser.id;
+      // 先获取旧数据ID，插入成功后再删除
+      const { data: oldRows } = await _supabase.from(table).select('id').eq('user_id', uid);
+      const oldIds = (oldRows || []).map(r => r.id);
       const payload = rows.map(r => ({ ...transform(r), user_id: uid }));
-      await _supabase.from(table).delete().eq('user_id', uid);
       if (payload.length) {
         const { error } = await _supabase.from(table).insert(payload);
-        if (error) console.error('推送失败', table, error);
+        if (error) {
+          console.error('推送失败', table, error);
+          return; // 插入失败时不删除旧数据，避免数据丢失
+        }
+      }
+      // 插入成功后删除旧数据
+      if (oldIds.length) {
+        await _supabase.from(table).delete().in('id', oldIds);
       }
     }
 
     async function syncAllToCloud() {
       if (!currentUser || !_supabase) return;
+      if (isSyncing) return;
       isSyncing = true;
+      updateSyncStatus('syncing');
       try {
         await Promise.all([
           pushToCloud('accounts', accounts, r => ({ date: r.date, platform: r.platform, item: r.item, usage: r.usage, purpose: r.purpose, amount: r.amount, flow: r.flow, note: r.note })),
-          pushToCloud('deliveries', [...pendingDeliveries, ...receivedDeliveries], r => ({ date: r.date, platform: r.platform, item: r.item, location: r.location, amount: r.amount, received: r.received, received_at: r.receivedAt })),
+          pushToCloud('deliveries', [...pendingDeliveries, ...receivedDeliveries], r => ({ date: r.date, platform: r.platform, item: r.item, location: r.location, amount: r.amount, received: r.received, received_at: r.receivedAt, pickup_location: r.pickupLocation || '', pickup_code: r.pickupCode || '' })),
           pushToCloud('reminders', [
             ...workItems.map(r => ({ date: r.date, text: r.text, type: 'work', done: r.done, completed_at: r.completedAt })),
             ...memoItems.map(r => ({ date: r.date, text: r.text, type: 'memo', done: r.done, completed_at: r.completedAt }))
@@ -3837,9 +3875,10 @@
           pushToCloud('longterm_notes', longtermNotes.map((r, i) => ({ title: r.title, content: r.content, sort_order: i })), r => r),
           pushToCloud('longterm_trash', longtermTrash, r => ({ title: r.title, content: r.content, deleted_at: r.deletedAt }))
         ]);
-        showToast('已同步到云端');
+        updateSyncStatus('success');
       } catch (e) {
         console.error('推送失败', e);
+        updateSyncStatus('error');
       } finally {
         isSyncing = false;
       }
@@ -3873,12 +3912,12 @@
       '存钱不一定立刻快乐，但余额会偷偷替你撑腰。'
     ];
 
-    const workItems = [
+    let workItems = [
       { date: '7月31日', text: '填写 ESS', done: false },
       { date: '9月1日', text: '完成考试', done: false }
     ];
 
-    const memoItems = [
+    let memoItems = [
       { date: '7月30日', text: '还信用卡', home: true },
       { date: '8月1日', text: '缴房租', home: true },
       { date: '无日期', text: '整理护肤品清单', home: false }
@@ -7111,9 +7150,31 @@
 
     document.getElementById('authSendCodeBtn').addEventListener('click', sendAuthCode);
     document.getElementById('authLogoutBtn').addEventListener('click', logout);
+    const syncBtn = document.getElementById('authSyncBtn');
+    if (syncBtn) {
+      syncBtn.addEventListener('click', () => {
+        if (currentUser && _supabase && !isSyncing) {
+          syncFromCloud().then(() => syncAllToCloud());
+        }
+      });
+    }
     if (initSupabase()) {
       checkAuth();
     }
+
+    // 页面可见性变化时自动从云端拉取数据
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && currentUser && _supabase && !isSyncing) {
+        syncFromCloud();
+      }
+    });
+
+    // 定时同步：每5分钟自动从云端拉取一次数据
+    setInterval(() => {
+      if (currentUser && _supabase && !isSyncing && document.visibilityState === 'visible') {
+        syncFromCloud();
+      }
+    }, 300000);
   </script>
   <!-- 移动端底部导航条 -->
   <nav class="nav mobile-bottom-nav" aria-label="移动端导航">

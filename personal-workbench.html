@@ -6346,5 +6346,23 @@
     <button data-page="longterm">📖 记录</button>
     <button data-page="delivery">📦 快递</button>
   </nav>
+  <script>
+    // 为移动端底部导航绑定点击事件
+    document.querySelectorAll('.mobile-bottom-nav button[data-page]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (typeof switchPage === 'function') {
+          switchPage(btn.dataset.page);
+        }
+      });
+    });
+    // 页面切换时同步底部导航的 active 状态
+    const _originalSwitchPage = switchPage;
+    switchPage = function(pageId) {
+      _originalSwitchPage(pageId);
+      document.querySelectorAll('.mobile-bottom-nav button[data-page]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.page === pageId);
+      });
+    };
+  </script>
 </body>
 </html>

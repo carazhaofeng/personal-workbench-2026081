@@ -4998,7 +4998,7 @@
         modified = true;
       }
       // 更正平台
-      const platformNames = ['淘宝', '天猫', '京东', '拼多多', 'PDD', '抖音', '小红书', '闲鱼', '1688', '阿里巴巴', '美团', '饿了么'];
+      const platformNames = ['淘宝', '天猫', '京东', '拼多多', 'PDD', '抖音', '小红书', '闲鱼', '1688', '阿里巴巴', '美团', '饿了么', '微信', '微信小程序', '微信群', '微信支付'];
       for (const p of platformNames) {
         if (new RegExp(p, 'i').test(text) && lastRow.platform !== p) {
           lastRow.platform = p === 'PDD' ? 'PDD' : p;
@@ -5032,7 +5032,7 @@
       let lastDate = null;
 
       rawParts.forEach(part => {
-        const isNewPurchase = /买|购买|下单|消费/.test(part) && /淘宝|天猫|京东|拼多多|抖音|小红书|唯品会|得物|美团|饿了么|直播间|闲鱼|阿里巴巴|门店|地铁|公交/.test(part);
+        const isNewPurchase = /买|购买|下单|消费/.test(part) && /淘宝|天猫|京东|拼多多|抖音|小红书|唯品会|得物|美团|饿了么|直播间|闲鱼|阿里巴巴|微信|门店|地铁|公交/.test(part);
         const isOfflineConsumption = /水电费|燃气费|物业费|宽带费|话费|充值|坐地铁|坐公交|门店买/.test(part) || (/交|缴/.test(part) && /水电|燃气|物业|宽带|话费/.test(part));
         const isAmountOnly = /^花了?\d|^花了|^\d+(?:\.\d+)?(?:元|块|块钱)/.test(part);
         let entryText;
@@ -5063,12 +5063,12 @@
 
         entries.push({ text: entryText, platform: finalPlatform, date: finalDate });
       });
-      return entries.filter(entry => /买|购买|下单|消费|花了|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(entry.text));
+      return entries.filter(entry => /买|购买|下单|消费|花了|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费|微信/.test(entry.text));
     }
 
     function detectPlatform(text) {
       const normalized = text.replace(/\bPDD\b/gi, '拼多多').replace(/\b1688\b/g, '阿里巴巴');
-      const platformMatch = normalized.match(/淘宝|天猫|京东|拼多多|抖音|小红书|唯品会|得物|美团|饿了么|闲鱼|阿里巴巴/);
+      const platformMatch = normalized.match(/淘宝|天猫|京东|拼多多|抖音|小红书|唯品会|得物|美团|饿了么|闲鱼|阿里巴巴|微信/);
       return platformMatch ? (platformMatch[0] === '阿里巴巴' ? '1688' : platformMatch[0]) : '待识别';
     }
 

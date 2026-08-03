@@ -19,19 +19,19 @@
   </style>
   <style>
     :root {
-      --bg: #fff7fa;
-      --bg2: #fff1f6;
-      --ink: #5a4350;
-      --muted: #9a7c8a;
-      --rule: #f3cddd;
-      --accent: #f2a9c4;
-      --accent2: #ffd7e7;
+      --bg: #fff9e6;
+      --bg2: #fff5d6;
+      --ink: #5a3a2a;
+      --muted: #8a6a4a;
+      --rule: #e8c896;
+      --accent: #d4a574;
+      --accent2: #f5e6c8;
       --surface: #ffffff;
-      --surface-soft: #fff8fb;
-      --brand: #c86c91;
-      --pink-soft: #ffddea;
-      --pink-light: #fff0f6;
-      --pink-deep: #c86c91;
+      --surface-soft: #fffcf5;
+      --brand: #c84a3a;
+      --pink-soft: #f5e6c8;
+      --pink-light: #fff5e6;
+      --pink-deep: #c84a3a;
       --yellow-soft: #fff2cf;
       --yellow-deep: #9a7a46;
       --purple-soft: #eee4ff;
@@ -41,9 +41,9 @@
       --green-glass: rgba(220, 246, 228, 0.78);
       --green-deep: #4d8a62;
       --white-glass: rgba(255, 255, 255, 0.74);
-      --pink-glass: rgba(255, 239, 246, 0.78);
-      --shadow: rgba(200, 108, 145, 0.12);
-      --shadow-soft: rgba(200, 108, 145, 0.07);
+      --pink-glass: rgba(255, 245, 230, 0.78);
+      --shadow: rgba(200, 74, 58, 0.12);
+      --shadow-soft: rgba(200, 74, 58, 0.07);
       --blur: blur(14px);
       --font: 'Instrument Sans', system-ui, sans-serif;
       --radius-lg: 28px;
@@ -60,7 +60,7 @@
       font-family: var(--font);
       color: var(--ink);
       background:
-        radial-gradient(circle at top left, rgba(255, 215, 231, .55), transparent 34%),
+        radial-gradient(circle at top left, rgba(255, 230, 180, .55), transparent 34%),
         radial-gradient(circle at bottom right, rgba(220, 246, 228, .35), transparent 30%),
         linear-gradient(135deg, var(--bg), var(--bg2));
       line-height: 1.42;
@@ -304,8 +304,8 @@
       animation: voice-pulse 1.2s ease-in-out infinite;
     }
     @keyframes voice-pulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(200, 108, 145, 0.4); }
-      50% { box-shadow: 0 0 0 8px rgba(200, 108, 145, 0); }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(200, 74, 58, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(200, 74, 58, 0); }
     }
     .voice-input-wrap {
       display: flex;
@@ -752,12 +752,12 @@
       font-weight: 400;
     }
     .work-item.overdue {
-      color: #b15f70;
-      background: #fff1f3;
-      border: 1px solid #f2c4cf;
+      color: #a04030;
+      background: #fff5f0;
+      border: 1px solid #e8c896;
     }
     .work-item.overdue span {
-      color: #b15f70;
+      color: #a04030;
     }
     .work-done-btn {
       border: 1px solid rgba(89, 132, 105, .25);
@@ -779,7 +779,7 @@
       border-color: rgba(120, 120, 120, .22);
     }
     .reminder-delete-btn {
-      border: 1px solid rgba(200, 108, 145, .24);
+      border: 1px solid rgba(200, 74, 58, .24);
       border-radius: 999px;
       background: rgba(255, 255, 255, .78);
       color: var(--pink-deep);

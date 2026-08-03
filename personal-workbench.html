@@ -1331,6 +1331,17 @@
       word-break: break-all;
       overflow-wrap: break-word;
     }
+    .input-log-text[contenteditable="true"] {
+      outline: 2px solid var(--accent);
+      border-radius: 4px;
+      padding: 2px 4px;
+      background: rgba(255, 255, 255, 0.9);
+      cursor: text;
+    }
+    .focus-history-item .input-log-text[contenteditable="true"] {
+      border-radius: 8px;
+      padding: 4px 6px;
+    }
     .input-log-empty {
       font-size: 0.7rem;
       color: var(--muted);
@@ -2400,6 +2411,10 @@
     }
     body.work-mode .input-log-text {
       color: #333333 !important;
+    }
+    body.work-mode .input-log-text[contenteditable="true"] {
+      outline: 1px solid #cccccc !important;
+      background: #ffffff !important;
     }
     /* work-mode: 专注视图 */
     body.work-mode .focus-history-item {
@@ -5069,7 +5084,7 @@
         return records.map(r => {
           const time = new Date(r.timestamp);
           const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
-          return `<div class="input-log-item"><div class="input-log-content"><span class="input-log-time">${timeStr}</span><span class="input-log-text">${escapeHtml(r.text)}</span></div><button class="log-delete-btn" data-timestamp="${r.timestamp}" title="删除此条记录">🗑</button></div>`;
+          return `<div class="input-log-item"><div class="input-log-content"><span class="input-log-time">${timeStr}</span><span class="input-log-text" data-timestamp="${r.timestamp}" title="双击编辑，回车保存">${escapeHtml(r.text)}</span></div><button class="log-delete-btn" data-timestamp="${r.timestamp}" title="删除此条记录">🗑</button></div>`;
         }).join('');
       };
       const filterBySection = (section) => currentMonthRecords.filter(r => {
@@ -5101,7 +5116,7 @@
         const section = sectionMap[r.section || 'all'] || '全部';
         return `<article class="focus-history-item">
           <time>${timeStr} · ${section}</time>
-          <span>${escapeHtml(r.text)}</span>
+          <span class="input-log-text" data-timestamp="${r.timestamp}" title="双击编辑，回车保存">${escapeHtml(r.text)}</span>
           <button class="log-delete-btn" data-timestamp="${r.timestamp}" title="删除此条记录">🗑</button>
         </article>`;
       }).join('');
@@ -6753,6 +6768,107 @@
     accountRows.addEventListener('click', handleAccountDelete);
     focusAccountRows.addEventListener('click', handleAccountDelete);
 
+    // 历史输入记录双击编辑
+    function handleInputLogDblClick(event) {
+      const textEl = event.target.closest('.input-log-text');
+      if (!textEl) return;
+      const ts = textEl.dataset.timestamp;
+      if (!ts) return;
+      const record = monthlyInputRecords.find(r => r.timestamp === ts);
+      if (!record) return;
+      // 进入编辑模式
+      textEl.contentEditable = 'true';
+      textEl.focus();
+      // 选中全部文本
+      const range = document.createRange();
+      range.selectNodeContents(textEl);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
+    function handleInputLogKeydown(event) {
+      const textEl = event.target;
+      if (!textEl || textEl.contentEditable !== 'true') return;
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        event.stopPropagation();
+        textEl.blur();
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        const ts = textEl.dataset.timestamp;
+        const record = monthlyInputRecords.find(r => r.timestamp === ts);
+        if (record) textEl.textContent = record.text;
+        textEl.contentEditable = 'false';
+        textEl.blur();
+      }
+    }
+
+    function handleInputLogBlur(event) {
+      const textEl = event.target;
+      if (!textEl || textEl.contentEditable !== 'true') return;
+      const ts = textEl.dataset.timestamp;
+      if (!ts) return;
+      const newText = textEl.textContent.trim();
+      textEl.contentEditable = 'false';
+      const record = monthlyInputRecords.find(r => r.timestamp === ts);
+      if (!record) return;
+      if (newText === record.text || !newText) {
+        textEl.textContent = record.text;
+        return;
+      }
+      // 更新记录文本
+      const oldText = record.text;
+      record.text = newText;
+      // 重新识别并更新工作台
+      reprocessInputRecord(record, oldText);
+      renderInputRecords();
+      saveAppData();
+    }
+
+    // 根据修改后的输入记录重新识别并更新工作台
+    function reprocessInputRecord(record, oldText) {
+      const text = record.text;
+      const section = record.section || 'all';
+      let updated = [];
+      // 记账/快递模块
+      const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|欢喵|喵站|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
+      if (hasAccountInfo) {
+        aiOrganize(text);
+        updated.push('生活记账');
+        if (/寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|欢喵|喵站|自提/.test(text)) {
+          updated.push('代收快递');
+        }
+      }
+      // 理财/备忘/工作
+      const segments = text.split(/[；;。\n]+/).map(cleanText).filter(Boolean);
+      segments.forEach(segment => {
+        if (/理财|基金|存款|零存整取|旅游基金|家庭理财|小满理财/.test(segment)) {
+          financeNotes.push({ date: getDateFromText(segment), text: segment });
+          renderFinanceNotes();
+          updated.push('家庭理财');
+        }
+        if (/备忘|记得|提醒|房租|信用卡|缴|交|生日|纪念日/.test(segment)) {
+          memoItems.push({ date: getDateFromText(segment), text: segment, home: getDateFromText(segment) !== '无日期' });
+          renderMemo();
+          updated.push('生活备忘录');
+        }
+        if (/工作|考试|ESS|提交|复盘|周报|项目|每周/.test(segment)) {
+          workItems.push({ date: getDateFromText(segment), text: segment, done: false });
+          renderWork();
+          updated.push('工作提醒');
+        }
+      });
+      if (!updated.length) {
+        memoItems.push({ date: getDateFromText(text), text, home: getDateFromText(text) !== '无日期' });
+        renderMemo();
+        updated.push('生活备忘录');
+      }
+      showToast(`已更新：${Array.from(new Set(updated)).join('、')}`);
+    }
+
     // 历史输入记录删除按钮
     function handleInputLogDelete(event) {
       const btn = event.target.closest('.log-delete-btn');
@@ -6778,6 +6894,13 @@
     if (deliveryInputLog) deliveryInputLog.addEventListener('click', handleInputLogDelete);
     if (workInputLog) workInputLog.addEventListener('click', handleInputLogDelete);
     if (focusMonthlyInputLog) focusMonthlyInputLog.addEventListener('click', handleInputLogDelete);
+    [accountingInputLog, deliveryInputLog, workInputLog, focusMonthlyInputLog].forEach(el => {
+      if (el) {
+        el.addEventListener('dblclick', handleInputLogDblClick);
+        el.addEventListener('keydown', handleInputLogKeydown, true);
+        el.addEventListener('blur', handleInputLogBlur, true);
+      }
+    });
     quickInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();

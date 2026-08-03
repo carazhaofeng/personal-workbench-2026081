@@ -5391,7 +5391,9 @@
       // ===== 取货码/自提点识别 =====
       const pickupCode = detectPickupCode(text);
       const pickupLocation = detectPickupLocation(text);
-      if (pickupCode || pickupLocation) {
+      // 只有取件码存在时才进入取件处理流程
+      // 仅检测到自提点（无取件码）时，不创建独立取件记录，只更新已有快递的提货点
+      if (pickupCode) {
         // 尝试匹配已有的待收快递记录（按商品名或平台匹配）
         let matchedDelivery = null;
         if (newDeliveries.length > 0) {
@@ -5407,27 +5409,31 @@
           }
         }
         if (matchedDelivery) {
-          if (pickupCode) matchedDelivery.pickupCode = pickupCode;
+          matchedDelivery.pickupCode = pickupCode;
           if (pickupLocation) matchedDelivery.pickupLocation = pickupLocation;
         } else {
           // 没有匹配到已有快递，作为独立取件记录
-          if (pickupCode || pickupLocation) {
-            const item = detectItem(text);
-            // 如果没有检测到自提点，尝试从已有待收快递中匹配同商品的提货点
-            let resolvedLocation = pickupLocation;
-            if (!resolvedLocation) {
-              const matched = pendingDeliveries.find(p => p.item.includes(item) || item.includes(p.item));
-              if (matched && matched.pickupLocation) resolvedLocation = matched.pickupLocation;
-            }
-            const platform = detectPlatform(text);
-            const date = getDateFromText(text) === '无日期' ? (() => { const n = new Date(); return `${n.getMonth() + 1}月${n.getDate()}日`; })() : getDateFromText(text);
-            const newPickup = { item, platform, pickupLocation: resolvedLocation || '待确认', date, received: false };
-            if (pickupCode) newPickup.pickupCode = pickupCode;
-            // 避免重复
-            const exists = pickupList.some(p => p.item === newPickup.item && p.pickupLocation === newPickup.pickupLocation && p.date === newPickup.date);
-            if (!exists) pickupList.push(newPickup);
+          const item = detectItem(text);
+          // 如果没有检测到自提点，尝试从已有待收快递中匹配同商品的提货点
+          let resolvedLocation = pickupLocation;
+          if (!resolvedLocation) {
+            const matched = pendingDeliveries.find(p => p.item.includes(item) || item.includes(p.item));
+            if (matched && matched.pickupLocation) resolvedLocation = matched.pickupLocation;
           }
+          const platform = detectPlatform(text);
+          const date = getDateFromText(text) === '无日期' ? (() => { const n = new Date(); return `${n.getMonth() + 1}月${n.getDate()}日`; })() : getDateFromText(text);
+          const newPickup = { item, platform, pickupLocation: resolvedLocation || '待确认', date, received: false };
+          newPickup.pickupCode = pickupCode;
+          // 避免重复
+          const exists = pickupList.some(p => p.item === newPickup.item && p.pickupLocation === newPickup.pickupLocation && p.date === newPickup.date);
+          if (!exists) pickupList.push(newPickup);
         }
+      } else if (pickupLocation && newDeliveries.length > 0) {
+        // 仅有自提点（无取件码）时，只更新新增快递的提货点信息
+        newDeliveries.forEach(d => {
+          const matched = pendingDeliveries.find(p => p.item === d.item && p.platform === d.platform);
+          if (matched) matched.pickupLocation = pickupLocation;
+        });
       }
 
       renderAccounts();
@@ -5564,8 +5570,15 @@
       // 按长度从长到短匹配，避免"视高"匹配到"视高申通"的子串
       const sorted = [...PICKUP_LOCATIONS].sort((a, b) => b.length - a.length);
       for (const loc of sorted) {
+        if (loc === '公司' || loc === '公司前台') {
+          // "公司"只在快递/取件上下文中匹配，避免"公司采购""公司报销"等误触发
+          if (/寄到|寄到了|送到|发到|寄往|发往|自提|取件|取货|提货|公司前台/.test(text) && text.includes(loc)) {
+            return '公司';
+          }
+          continue;
+        }
         if (text.includes(loc)) {
-          return loc === '公司前台' ? '公司' : loc;
+          return loc;
         }
       }
       // 模糊匹配
@@ -5587,7 +5600,6 @@
       const patterns = [
         /(?:取货码|取件码|提货码|取件号|提货号)\s*[:：]?\s*([A-Za-z0-9\-]+)/,
         /(?:取货码|取件码|提货码|取件号|提货号)\s*为\s*([A-Za-z0-9\-]+)/,
-        /(?:码|code)\s*[:：]?\s*([A-Za-z0-9]{4,8})/,
         /取件码([A-Za-z0-9]{4,8})/,
         /货号\s*[:：]?\s*([A-Za-z0-9\-]+)/,
       ];

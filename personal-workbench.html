@@ -5390,7 +5390,11 @@
 
       // ===== 取货码/自提点识别 =====
       const pickupCode = detectPickupCode(text);
-      const pickupLocation = detectPickupLocation(text);
+      let pickupLocation = detectPickupLocation(text);
+      // 如果文本中没有明确自提点，尝试根据取件码格式推断
+      if (pickupCode && !pickupLocation) {
+        pickupLocation = inferLocationFromCode(pickupCode);
+      }
       // 只有取件码存在时才进入取件处理流程
       // 仅检测到自提点（无取件码）时，不创建独立取件记录，只更新已有快递的提货点
       if (pickupCode) {
@@ -5594,19 +5598,56 @@
       return null;
     }
 
+    // 各自提点取件码格式定义
+    // 丰巢/公司: 8位纯数字 (77688839)
+    // 视高申通: 数字-数字-数字 (88-1-5866, 3-5-3522)
+    // 视高极兔: 数字-数字-数字 (1-8-6016) — 与申通格式相同
+    // 欢喵驿站: 字母数字-数字-数字 (22A-2-1055, 8A-3-489)
+    // 万科菜鸟: 数字-数字-数字 (6-1-4007, 15-4-4005) — 与申通/极兔格式相同
+    // 注意：申通/极兔/菜鸟的数字-数字-数字格式无法区分，需靠文本中的自提点关键词辅助
+
     // 取货码识别
     function detectPickupCode(text) {
-      // 取货码/取件码/提货码 + 数字（支持字母数字混合，如 A1234, 1-2-3）
-      const patterns = [
+      // 1. 明确关键词匹配：取货码/取件码/提货码 + 编码
+      const keywordPatterns = [
         /(?:取货码|取件码|提货码|取件号|提货号)\s*[:：]?\s*([A-Za-z0-9\-]+)/,
         /(?:取货码|取件码|提货码|取件号|提货号)\s*为\s*([A-Za-z0-9\-]+)/,
-        /取件码([A-Za-z0-9]{4,8})/,
+        /取件码([A-Za-z0-9\-]{4,12})/,
         /货号\s*[:：]?\s*([A-Za-z0-9\-]+)/,
       ];
-      for (const p of patterns) {
+      for (const p of keywordPatterns) {
         const m = text.match(p);
         if (m && m[1]) return m[1].toUpperCase();
       }
+      // 2. 丰巢取件码格式：8位纯数字（公司丰巢自提柜）
+      // 排除金额场景：前后不能有"元""块""¥"等金额标识，且不能是"花了/消费"后紧跟的数字
+      const fengNestMatch = text.match(/(?:^|[^\d¥])(\d{8})(?:[^\d元块]|$)/);
+      if (fengNestMatch && fengNestMatch[1]) {
+        // 检查这8位数字前后是否有金额上下文
+        const idx = text.indexOf(fengNestMatch[1]);
+        const before = text.slice(0, idx);
+        const after = text.slice(idx + 8);
+        if (!/(?:花了|消费|用了|花费|¥)\s*$/.test(before) && !/^\s*(?:元|块|块钱)/.test(after)) {
+          return fengNestMatch[1].toUpperCase();
+        }
+      }
+      // 3. 欢喵格式：字母数字混合-数字-数字（如 22A-2-1055, 8A-3-489）
+      const huanMiaoMatch = text.match(/([0-9]{1,2}[A-Za-z]-\d{1,2}-\d{1,6})/);
+      if (huanMiaoMatch && huanMiaoMatch[1]) return huanMiaoMatch[1].toUpperCase();
+      // 4. 申通/极兔/菜鸟格式：数字-数字-数字（如 88-1-5866, 1-8-6016, 6-1-4007）
+      const hyphenMatch = text.match(/(\d{1,3}-\d{1,3}-\d{1,6})/);
+      if (hyphenMatch && hyphenMatch[1]) return hyphenMatch[1].toUpperCase();
+      return null;
+    }
+
+    // 根据取件码格式推断自提点
+    function inferLocationFromCode(code) {
+      if (!code) return null;
+      // 8位纯数字 → 公司丰巢
+      if (/^\d{8}$/.test(code)) return '公司';
+      // 字母数字混合-数字-数字 → 欢喵驿站
+      if (/^[0-9]{1,2}[A-Za-z]-\d{1,2}-\d{1,6}$/.test(code)) return '欢喵驿站';
+      // 数字-数字-数字格式无法区分申通/极兔/菜鸟，返回 null 需文本辅助
       return null;
     }
 

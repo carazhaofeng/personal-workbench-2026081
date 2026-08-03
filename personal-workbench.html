@@ -3593,8 +3593,8 @@
         ]);
         if (acc && acc.length) { accounts = acc.map(r => ({ date: r.date, platform: r.platform, item: r.item, usage: r.usage, purpose: r.purpose, amount: r.amount, flow: r.flow, note: r.note })); }
         if (del && del.length) {
-          pendingDeliveries = del.filter(r => !r.received).map(r => ({ date: r.date, platform: r.platform, item: r.item, location: r.location, amount: r.amount, received: false }));
-          receivedDeliveries = del.filter(r => r.received).map(r => ({ date: r.date, platform: r.platform, item: r.item, location: r.location, amount: r.amount, received: true, receivedAt: r.received_at }));
+          pendingDeliveries = del.filter(r => !r.received).map(r => ({ date: r.date, platform: r.platform, item: r.item, location: r.location, amount: r.amount, received: false, pickupLocation: r.pickup_location || r.pickupLocation || '', pickupCode: r.pickup_code || r.pickupCode || '' }));
+          receivedDeliveries = del.filter(r => r.received).map(r => ({ date: r.date, platform: r.platform, item: r.item, location: r.location, amount: r.amount, received: true, receivedAt: r.received_at, pickupLocation: r.pickup_location || r.pickupLocation || '', pickupCode: r.pickup_code || r.pickupCode || '' }));
         }
         if (rem && rem.length) {
           workItems = rem.filter(r => r.type === 'work').map(r => ({ date: r.date, text: r.text, done: r.done, completedAt: r.completed_at || '' }));
@@ -3607,6 +3607,7 @@
         if (ltt && ltt.length) {
           longtermTrash.splice(0, longtermTrash.length, ...ltt.map(r => ({ title: r.title, content: r.content, deletedAt: r.deleted_at })));
         }
+        migratePickupLocations();
         window.localStorage.setItem(APP_DATA_STORAGE_KEY, JSON.stringify({
           accounts, pendingDeliveries, receivedDeliveries, pickupList, monthlyInputRecords,
           workItems, memoItems, longtermNotes, longtermTrash
@@ -3748,6 +3749,7 @@
         restoreAccountsFromDeliveries();
         normalizeWorkReminders();
         removeVerificationData();
+        migratePickupLocations();
         saveAppData();
         return;
       }
@@ -3774,12 +3776,14 @@
         restoreAccountsFromDeliveries();
         normalizeWorkReminders();
         removeVerificationData();
+        migratePickupLocations();
         saveAppData();
       } catch (error) {
         pruneLongtermTrash();
         restoreAccountsFromDeliveries();
         normalizeWorkReminders();
         removeVerificationData();
+        migratePickupLocations();
         saveAppData();
       }
     }
@@ -3799,6 +3803,22 @@
       pendingDeliveries = pendingDeliveries.filter(d => d.item !== '保存测试小物');
       receivedDeliveries = receivedDeliveries.filter(d => d.item !== '保存测试小物');
       monthlyInputRecords = monthlyInputRecords.filter(r => !/保存测试小物/.test(r.text || ''));
+    }
+
+    // 数据迁移：修复旧的自提点名称
+    function migratePickupLocations() {
+      const oldNames = ['视高喵站', '视高欢喵', '视高喵'];
+      const migrate = (arr) => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(item => {
+          if (item && item.pickupLocation && oldNames.includes(item.pickupLocation)) {
+            item.pickupLocation = '欢喵驿站';
+          }
+        });
+      };
+      migrate(pendingDeliveries);
+      migrate(receivedDeliveries);
+      migrate(pickupList);
     }
 
     function restoreAccountsFromDeliveries() {
@@ -4673,7 +4693,7 @@
     }
 
     // ===== 代取件列表渲染 =====
-    const PICKUP_LOCATION_ORDER = ['公司', '万科兔喜', '万科菜鸟', '视高申通', '视高邮政', '视高中通', '视高极兔', '视高喵站'];
+    const PICKUP_LOCATION_ORDER = ['公司', '万科兔喜', '万科菜鸟', '视高申通', '视高邮政', '视高中通', '视高极兔', '欢喵驿站'];
     function renderPickupList() {
       if (!pickupListEl) return;
       const pending = pickupList.filter(p => !p.received);
@@ -5223,7 +5243,7 @@
 
     // 自提点识别：8种自提点
     const PICKUP_LOCATIONS = [
-      '万科兔喜', '万科菜鸟', '视高申通', '视高邮政', '视高中通', '视高极兔', '视高喵站',
+      '万科兔喜', '万科菜鸟', '视高申通', '视高邮政', '视高中通', '视高极兔', '欢喵驿站',
       '公司', '公司前台'
     ];
     function detectPickupLocation(text) {
@@ -5242,7 +5262,8 @@
       if (/邮政/.test(text) && /视高/.test(text)) return '视高邮政';
       if (/中通/.test(text) && /视高/.test(text)) return '视高中通';
       if (/极兔/.test(text) && /视高/.test(text)) return '视高极兔';
-      if (/喵站/.test(text) && /视高/.test(text)) return '视高喵站';
+      if (/欢喵|欢喵驿站/.test(text)) return '欢喵驿站';
+      if (/喵站/.test(text)) return '欢喵驿站';
       return null;
     }
 
@@ -5388,12 +5409,12 @@
       }
 
       let updated = [];
-      const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|喵站|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
+      const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|欢喵|喵站|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
       if (hasAccountInfo) {
         aiOrganize(text);
         recordInput(text, 'accounting');
         updated.push('生活记账');
-        if (/寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|喵站|自提/.test(text)) {
+        if (/寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|欢喵|喵站|自提/.test(text)) {
           recordInput(text, 'delivery');
           updated.push('代收快递');
         }
@@ -5437,12 +5458,12 @@
       }
 
       let updated = [];
-      const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|喵站|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
+      const hasAccountInfo = /买|花了|购买|下单|消费|工资|收入|奖金|副业|红包|退货|退款|退了|寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|欢喵|喵站|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text);
       if (hasAccountInfo) {
         aiOrganize(text);
         recordInput(text, 'accounting');
         updated.push('生活记账');
-        if (/寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|喵站|自提/.test(text)) {
+        if (/寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|欢喵|喵站|自提/.test(text)) {
           recordInput(text, 'delivery');
           updated.push('代收快递');
         }

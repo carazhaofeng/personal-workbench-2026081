@@ -4,6 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>安安姐是大美女</title>
   <style>
     @font-face {
@@ -3783,7 +3786,47 @@
       }
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- 多源 CDN 加载 Supabase SDK（主源 jsdelivr，备源 unpkg） -->
+  <script>
+    // 异步加载 Supabase SDK，支持多源回退
+    (function() {
+      var cdnSources = [
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+        'https://unpkg.com/@supabase/supabase-js@2',
+        'https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.x/umd/supabase-js.min.js'
+      ];
+      var loaded = false;
+      function loadScript(url, callback) {
+        var s = document.createElement('script');
+        s.src = url;
+        s.onload = function() { loaded = true; callback(true); };
+        s.onerror = function() { console.warn('CDN 加载失败: ' + url); callback(false); };
+        s.async = false; // 保持顺序
+        document.head.appendChild(s);
+      }
+      function tryNext(idx) {
+        if (idx >= cdnSources.length) {
+          console.error('所有 CDN 源均加载失败，Supabase SDK 无法加载');
+          window._supabaseSdkFailed = true;
+          // 显示加载失败提示
+          document.addEventListener('DOMContentLoaded', function() {
+            var panel = document.getElementById('authLoggedOut');
+            if (panel) {
+              var errDiv = document.createElement('div');
+              errDiv.style.cssText = 'color:#c84a3a;font-size:0.7rem;padding:4px 0;';
+              errDiv.textContent = '⚠ SDK 加载失败，请检查网络或使用VPN后刷新页面';
+              panel.appendChild(errDiv);
+            }
+          });
+          return;
+        }
+        loadScript(cdnSources[idx], function(success) {
+          if (!success) tryNext(idx + 1);
+        });
+      }
+      tryNext(0);
+    })();
+  </script>
 </head>
 <body>
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -3802,9 +3845,10 @@
       <div class="auth-panel" id="authPanel">
         <div class="auth-logged-out" id="authLoggedOut">
           <div class="auth-label">账号登录（多设备同步）</div>
-          <input type="email" id="authEmail" placeholder="在此输入邮箱地址">
-          <button class="soft-button" id="authSendCodeBtn">发送登录链接</button>
+          <input type="email" id="authEmail" placeholder="在此输入邮箱地址" autocomplete="email">
+          <button class="soft-button" id="authSendCodeBtn" onclick="sendAuthCode()">发送登录链接</button>
           <div class="auth-hint" id="authHint" style="display:none;">登录链接已发到邮箱，请去邮箱点击链接完成登录</div>
+          <div id="authStatus" style="font-size:0.68rem;color:#999;padding:2px 0;"></div>
         </div>
         <div class="auth-logged-in" id="authLoggedIn" style="display:none;">
           <span class="auth-email" id="authUserEmail"></span>
@@ -4261,29 +4305,45 @@
     let currentUser = null;
     let isSyncing = false;
 
+    function setAuthStatus(msg, color) {
+      const el = document.getElementById('authStatus');
+      if (el) {
+        el.textContent = msg;
+        el.style.color = color || '#999';
+      }
+    }
+
     function initSupabase() {
-      if (typeof supabase === 'undefined' || !supabase.createClient) {
-        console.warn('Supabase SDK 未加载，将在DOMContentLoaded后重试');
-        // SDK 可能还在加载中，延迟重试
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', () => {
-            if (typeof supabase !== 'undefined' && supabase.createClient) {
-              _initSupabaseClient();
-            }
-          });
-        } else {
-          // DOM 已就绪但 SDK 未加载，延迟重试
-          setTimeout(() => {
-            if (typeof supabase !== 'undefined' && supabase.createClient) {
-              _initSupabaseClient();
-            } else {
-              console.error('Supabase SDK 加载失败，请检查网络连接');
-            }
-          }, 1000);
-        }
+      // SDK 加载失败标记
+      if (window._supabaseSdkFailed) {
+        setAuthStatus('⚠ SDK 加载失败，请检查网络', '#c84a3a');
         return false;
       }
-      return _initSupabaseClient();
+      if (typeof supabase === 'undefined' || !supabase.createClient) {
+        console.warn('Supabase SDK 未加载，开始轮询等待...');
+        setAuthStatus('正在加载服务...', '#999');
+        // 轮询检查 SDK 是否加载完成（最多等15秒）
+        let pollCount = 0;
+        const pollInterval = setInterval(() => {
+          pollCount++;
+          if (typeof supabase !== 'undefined' && supabase.createClient) {
+            clearInterval(pollInterval);
+            console.log('SDK 加载完成（轮询第' + pollCount + '次）');
+            _initSupabaseClient();
+            checkAuth();
+          } else if (pollCount >= 30) { // 15秒超时
+            clearInterval(pollInterval);
+            console.error('SDK 轮询超时，加载失败');
+            setAuthStatus('⚠ 服务加载超时，请刷新页面或检查网络', '#c84a3a');
+          }
+        }, 500);
+        return false;
+      }
+      // SDK 已加载，直接初始化
+      if (_initSupabaseClient()) {
+        checkAuth();
+      }
+      return true;
     }
 
     function _initSupabaseClient() {
@@ -4319,9 +4379,11 @@
             }
           }
         });
+        setAuthStatus('服务已就绪 ✓', '#4CAF50');
         return true;
       } catch (e) {
         console.error('Supabase 初始化失败:', e);
+        setAuthStatus('⚠ 初始化失败: ' + e.message, '#c84a3a');
         return false;
       }
     }
@@ -4400,10 +4462,12 @@
       const email = emailInput.value.trim();
       if (!email || !email.includes('@')) {
         showToast('请输入有效的邮箱地址');
+        setAuthStatus('请输入有效的邮箱地址', '#c84a3a');
         return;
       }
       if (!_supabase) {
         showToast('服务未初始化，请刷新页面重试');
+        setAuthStatus('⚠ 服务未初始化，请刷新页面', '#c84a3a');
         console.error('sendAuthCode: Supabase 未初始化');
         return;
       }
@@ -4412,6 +4476,7 @@
       sendBtn.disabled = true;
       const originalText = sendBtn.textContent;
       sendBtn.textContent = '发送中...';
+      setAuthStatus('正在发送验证邮件...', '#4a7a32');
       try {
         const { error } = await _supabase.auth.signInWithOtp({
           email,
@@ -4421,7 +4486,9 @@
         });
         if (error) {
           console.error('signInWithOtp error:', error);
-          showToast('发送失败：' + error.message);
+          const errMsg = '发送失败：' + error.message;
+          showToast(errMsg);
+          setAuthStatus('⚠ ' + errMsg, '#c84a3a');
           sendBtn.disabled = false;
           sendBtn.textContent = originalText;
           return;
@@ -4429,6 +4496,7 @@
         sendBtn.textContent = '已发送 ✓';
         if (hint) hint.style.display = 'block';
         showToast('登录链接已发送到邮箱');
+        setAuthStatus('✓ 验证邮件已发送到 ' + email, '#4CAF50');
         // 30秒后恢复按钮
         setTimeout(() => {
           sendBtn.disabled = false;
@@ -4436,7 +4504,9 @@
         }, 30000);
       } catch (e) {
         console.error('sendAuthCode 异常:', e);
-        showToast('发送异常，请重试：' + (e.message || e));
+        const errMsg = '发送异常：' + (e.message || e);
+        showToast(errMsg);
+        setAuthStatus('⚠ ' + errMsg, '#c84a3a');
         sendBtn.disabled = false;
         sendBtn.textContent = originalText;
       }
@@ -8489,17 +8559,8 @@
         }
       });
     }
-    // 初始化 Supabase 并检查登录状态
-    if (initSupabase()) {
-      checkAuth();
-    } else {
-      // SDK 未就绪时延迟重试 checkAuth
-      setTimeout(() => {
-        if (_supabase) {
-          checkAuth();
-        }
-      }, 1500);
-    }
+    // 初始化 Supabase 并检查登录状态（initSupabase 内部已处理轮询和重试）
+    initSupabase();
 
     // 页面可见性变化时自动从云端拉取数据
     document.addEventListener('visibilitychange', () => {

@@ -7874,21 +7874,26 @@
         });
       }
     });
-    document.querySelector('#accounting .table-wrap').addEventListener('dblclick', openTableFocus);
-    accountRows.addEventListener('input', (event) => {
-      const cell = event.target.closest('td[contenteditable="true"]');
-      if (cell) updateAccountFromCell(cell);
-    });
-    accountRows.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        event.target.blur();
-      }
-    });
-    accountRows.addEventListener('blur', (event) => {
-      const cell = event.target.closest('td[contenteditable="true"]');
-      if (cell) updateAccountFromCell(cell);
-    }, true);
+    const accountingTableWrap = document.querySelector('#accounting .table-wrap');
+    if (accountingTableWrap) {
+      accountingTableWrap.addEventListener('dblclick', openTableFocus);
+    }
+    if (accountRows) {
+      accountRows.addEventListener('input', (event) => {
+        const cell = event.target.closest('td[contenteditable="true"]');
+        if (cell) updateAccountFromCell(cell);
+      });
+      accountRows.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          event.target.blur();
+        }
+      });
+      accountRows.addEventListener('blur', (event) => {
+        const cell = event.target.closest('td[contenteditable="true"]');
+        if (cell) updateAccountFromCell(cell);
+      }, true);
+    }
     const monthBarEl = document.getElementById('accountingMonthBar');
     if (monthBarEl) {
       monthBarEl.addEventListener('dblclick', (event) => {
@@ -8564,6 +8569,62 @@
         syncFromCloud();
       }
     }, 300000);
+  </script>
+  <!-- 独立脚本块：确保 Supabase 初始化不受主脚本块错误影响 -->
+  <script>
+    // 兜底初始化：如果主脚本块出错导致 initSupabase 未执行，这里再次尝试
+    if (typeof _supabase === 'undefined' || _supabase === null) {
+      console.log('兜底初始化：主脚本可能出错，尝试重新初始化 Supabase');
+      if (typeof initSupabase === 'function') {
+        initSupabase();
+      } else {
+        // 即使 initSupabase 函数也未定义，直接尝试初始化
+        if (typeof supabase !== 'undefined' && supabase.createClient) {
+          try {
+            _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+              auth: {
+                flowType: 'implicit',
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                storageKey: 'sb-auth-token',
+                storage: window.localStorage
+              }
+            });
+            _supabase.auth.onAuthStateChange((event, session) => {
+              if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
+                currentUser = session?.user || null;
+                if (typeof updateAuthUI === 'function') updateAuthUI();
+                if (currentUser && !isSyncing && typeof syncFromCloud === 'function') {
+                  syncFromCloud();
+                }
+              } else if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                if (typeof updateAuthUI === 'function') updateAuthUI();
+              }
+            });
+            _supabase.auth.getSession().then(({ data: { session } }) => {
+              if (session) {
+                currentUser = session.user;
+                if (typeof updateAuthUI === 'function') updateAuthUI();
+                if (typeof syncFromCloud === 'function') syncFromCloud();
+              }
+            });
+            const statusEl = document.getElementById('authStatus');
+            if (statusEl) { statusEl.textContent = '服务已就绪 ✓'; statusEl.style.color = '#4CAF50'; }
+            console.log('兜底初始化成功');
+          } catch (e) {
+            console.error('兜底初始化失败:', e);
+            const statusEl = document.getElementById('authStatus');
+            if (statusEl) { statusEl.textContent = '⚠ 初始化失败: ' + e.message; statusEl.style.color = '#c84a3a'; }
+          }
+        } else {
+          console.error('Supabase SDK 未加载，无法初始化');
+          const statusEl = document.getElementById('authStatus');
+          if (statusEl) { statusEl.textContent = '⚠ SDK 未加载'; statusEl.style.color = '#c84a3a'; }
+        }
+      }
+    }
   </script>
   <!-- 移动端底部导航条 -->
   <nav class="nav mobile-bottom-nav" aria-label="移动端导航">

@@ -5569,8 +5569,11 @@
       const { months, currentKey } = getAccountMonths();
       if (!months.length) { el.innerHTML = ''; return; }
       el.innerHTML = months.map(m => {
-        const isActive = m.key === currentKey;
-        return `<div class="month-chip${isActive ? ' active' : ''}" data-month="${m.key}" data-year="${m.year}" data-month-num="${m.month}" title="双击查看${m.year}年${m.month}月详情">
+        // 当前未选中历史月份时，高亮当月；选中历史月份时高亮对应月份
+        const isActive = activeAccountMonth
+          ? m.key === activeAccountMonth
+          : m.key === currentKey;
+        return `<div class="month-chip${isActive ? ' active' : ''}" data-month="${m.key}" data-year="${m.year}" data-month-num="${m.month}" title="点击查看${m.year}年${m.month}月记录">
           <span>${m.year}.${m.month}</span>
           <span class="month-chip-amount">¥${m.total.toFixed(2).replace(/\.00$/, '')}</span>
         </div>`;
@@ -5663,33 +5666,131 @@
     }
 
     // ===== 渲染左侧卡片列表 =====
+    // 卡片列表逻辑：
+    // - 默认(null)：显示当月所有记录卡片 + 之前月份的汇总卡片
+    // - 选中某月：显示该月的所有记录卡片
     function renderAccountCardList() {
       if (!accountCardItems) return;
       if (!accounts.length) {
         accountCardItems.innerHTML = '<div style="text-align:center;color:#999;padding:20px 0;font-size:0.8rem;">暂无消费记录<br>点击 ＋ 新建</div>';
         return;
       }
-      // 倒序显示（最新在上）
-      const sorted = accounts.map((row, idx) => ({ row, idx })).reverse();
-      accountCardItems.innerHTML = sorted.map(({ row, idx }) => {
-        const holiday = getHolidayInfo(row.date);
-        const dateDisplay = holiday ? `${row.date}(${holiday})` : row.date;
-        const isActive = idx === selectedAccountIdx;
-        return `<div class="account-card-item ${isActive ? 'active' : ''}" data-index="${idx}">
-          <div class="account-card-date">${dateDisplay || '无日期'}</div>
-          <div class="account-card-title">${escapeHtml(row.item || '未命名')}</div>
-          <div class="account-card-meta">
-            <span class="account-card-amount">¥${row.amount || '0'}</span>
-            ${row.platform ? `<span class="account-card-platform">${escapeHtml(row.platform)}</span>` : ''}
-          </div>
-          <span class="account-card-drag-handle" title="长按拖动排序">⋮⋮</span>
-        </div>`;
-      }).join('');
+      const now = new Date();
+      const currentKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+      const { months } = getAccountMonths();
+      const previousMonths = months.filter(m => m.key !== currentKey);
+
+      let html = '';
+
+      // 如果选中了某个历史月份，只显示该月的记录
+      if (activeAccountMonth && activeAccountMonth !== currentKey) {
+        const monthRecords = accounts
+          .map((row, idx) => ({ row, idx }))
+          .filter(({ row }) => getRowMonthKey(row) === activeAccountMonth)
+          .reverse();
+        // 返回本月按钮
+        html += `<div class="account-card-month-back" id="backToCurrentMonth" style="padding:6px 10px;font-size:0.75rem;color:var(--pink-deep);cursor:pointer;border-bottom:1px solid #eee;margin-bottom:4px;">← 返回本月</div>`;
+        if (!monthRecords.length) {
+          html += '<div style="text-align:center;color:#999;padding:12px 0;font-size:0.78rem;">该月暂无记录</div>';
+        } else {
+          html += monthRecords.map(({ row, idx }) => renderAccountCard(row, idx)).join('');
+        }
+        accountCardItems.innerHTML = html;
+        return;
+      }
+
+      // 默认：显示当月记录
+      const currentMonthRecords = accounts
+        .map((row, idx) => ({ row, idx }))
+        .filter(({ row }) => getRowMonthKey(row) === currentKey)
+        .reverse();
+
+      if (currentMonthRecords.length) {
+        html += currentMonthRecords.map(({ row, idx }) => renderAccountCard(row, idx)).join('');
+      } else {
+        html += '<div style="text-align:center;color:#999;padding:8px 0;font-size:0.78rem;">本月暂无记录</div>';
+      }
+
+      // 显示之前月份的汇总卡片
+      if (previousMonths.length) {
+        html += '<div style="padding:4px 10px;font-size:0.68rem;color:#999;border-top:1px solid #eee;margin-top:4px;">历史月份</div>';
+        html += previousMonths.map(m => {
+          return `<div class="account-card-item account-card-month-summary" data-month-key="${m.key}" style="cursor:pointer;border-left:3px solid var(--pink);">
+            <div class="account-card-date">${m.year}.${m.month}</div>
+            <div class="account-card-title">${m.count} 条记录</div>
+            <div class="account-card-meta">
+              <span class="account-card-amount">¥${m.total.toFixed(2).replace(/\.00$/, '')}</span>
+              <span class="account-card-platform" style="color:var(--pink-deep);">点击查看 →</span>
+            </div>
+          </div>`;
+        }).join('');
+      }
+
+      accountCardItems.innerHTML = html;
+    }
+
+    // 渲染单条记录卡片
+    function renderAccountCard(row, idx) {
+      const holiday = getHolidayInfo(row.date);
+      const dateDisplay = holiday ? `${row.date}(${holiday})` : row.date;
+      const isActive = idx === selectedAccountIdx;
+      return `<div class="account-card-item ${isActive ? 'active' : ''}" data-index="${idx}">
+        <div class="account-card-date">${dateDisplay || '无日期'}</div>
+        <div class="account-card-title">${escapeHtml(row.item || '未命名')}</div>
+        <div class="account-card-meta">
+          <span class="account-card-amount">¥${row.amount || '0'}</span>
+          ${row.platform ? `<span class="account-card-platform">${escapeHtml(row.platform)}</span>` : ''}
+        </div>
+        <span class="account-card-drag-handle" title="长按拖动排序">⋮⋮</span>
+      </div>`;
     }
 
     // ===== 渲染右侧详情 =====
     function renderAccountDetail() {
       if (!accountDetailContent) return;
+
+      // 如果选中了历史月份，右侧显示该月所有记录的汇总列表
+      const now = new Date();
+      const currentKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+      if (activeAccountMonth && activeAccountMonth !== currentKey && selectedAccountIdx < 0) {
+        const [yearStr, monthStr] = activeAccountMonth.split('-');
+        const year = Number(yearStr);
+        const month = Number(monthStr);
+        const monthRecords = accounts
+          .map((row, idx) => ({ row, idx }))
+          .filter(({ row }) => getRowMonthKey(row) === activeAccountMonth);
+        const total = monthRecords.reduce((sum, { row }) => sum + (parseFloat(row.amount) || 0), 0);
+        const categories = getMonthCategorySummary(activeAccountMonth);
+
+        const header = `<div class="account-detail-header">
+          <span>${year}年${month}月记账详情</span>
+          <span class="account-detail-total">合计：¥${total.toFixed(2)}</span>
+        </div>`;
+
+        const summaryHtml = categories.length
+          ? `<div class="month-detail-summary" style="margin-bottom:8px;">
+              ${categories.map(([name, amount]) => `<span style="display:inline-block;padding:2px 8px;margin:2px;background:#f5f0f0;border-radius:8px;font-size:0.72rem;">${name} ¥${amount.toFixed(2)}</span>`).join('')}
+            </div>`
+          : '';
+
+        const listHtml = monthRecords.length
+          ? `<div class="account-detail-month-list">${monthRecords.map(({ row, idx }) => {
+              const holiday = getHolidayInfo(row.date);
+              const dateDisplay = holiday ? `${row.date}(${holiday})` : row.date;
+              return `<div class="account-detail-month-item" data-index="${idx}" style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid #f5f5f5;cursor:pointer;border-radius:4px;" onmouseover="this.style.background='#f8fcf4'" onmouseout="this.style.background=''">
+                <span style="font-size:0.68rem;color:#999;min-width:60px;">${dateDisplay || '无日期'}</span>
+                <span style="flex:1;font-size:0.78rem;">${escapeHtml(row.item || '未命名')}</span>
+                ${row.platform ? `<span style="font-size:0.68rem;color:var(--pink);">${escapeHtml(row.platform)}</span>` : ''}
+                <span style="font-size:0.78rem;font-weight:600;color:var(--pink-deep);">¥${row.amount || '0'}</span>
+              </div>`;
+            }).join('')}</div>`
+          : '<div class="delivery-empty">该月暂无记录</div>';
+
+        accountDetailContent.innerHTML = header + summaryHtml + listHtml;
+        return;
+      }
+
+      // 默认：显示选中的单条记录详情
       if (selectedAccountIdx < 0 || selectedAccountIdx >= accounts.length) {
         accountDetailContent.innerHTML = '<div class="account-detail-empty">请在左侧选择一条记录</div>';
         return;
@@ -5704,10 +5805,14 @@
         { key: 'amount', label: '金额' },
         { key: 'note', label: '备注' },
       ];
-      const total = accounts.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+      // 本月合计（基于当前选中记录的月份）
+      const selectedMonthKey = getRowMonthKey(row);
+      const monthTotal = accounts
+        .filter(r => getRowMonthKey(r) === selectedMonthKey)
+        .reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
       const header = `<div class="account-detail-header">
         <span>${escapeHtml(row.item || '未命名')} — ${escapeHtml(row.date || '无日期')}</span>
-        <span class="account-detail-total">本月合计：¥${total.toFixed(2)}</span>
+        <span class="account-detail-total">当月合计：¥${monthTotal.toFixed(2)}</span>
       </div>`;
       const rows = fields.map(f => {
         const val = row[f.key] || '';
@@ -7896,33 +8001,36 @@
     }
     const monthBarEl = document.getElementById('accountingMonthBar');
     if (monthBarEl) {
-      monthBarEl.addEventListener('dblclick', (event) => {
-        const chip = event.target.closest('.month-chip');
-        if (!chip) return;
-        const monthKey = chip.dataset.month;
-        if (activeAccountMonth === monthKey) {
-          activeAccountMonth = null;
-        } else {
-          activeAccountMonth = monthKey;
-          if (accountRows) accountRows.innerHTML = buildAccountRowsHtml(monthKey);
-        }
-        renderAccounts();
-      });
       monthBarEl.addEventListener('click', (event) => {
         const chip = event.target.closest('.month-chip');
         if (!chip) return;
         const monthKey = chip.dataset.month;
-        if (accountRows) accountRows.innerHTML = buildAccountRowsHtml(monthKey);
+        const now = new Date();
+        const currentKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+        // 点击当前月份：返回默认视图
+        if (monthKey === currentKey) {
+          activeAccountMonth = null;
+          selectedAccountIdx = -1;
+        } else {
+          // 点击历史月份：展开该月
+          activeAccountMonth = monthKey;
+          selectedAccountIdx = -1;
+        }
+        if (accountRows) accountRows.innerHTML = buildAccountRowsHtml(activeAccountMonth || currentKey);
         document.querySelectorAll('.month-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
+        saveAppData();
+        renderAccounts();
       });
     }
     document.addEventListener('click', (event) => {
       if (event.target && event.target.id === 'closeMonthDetailBtn') {
         activeAccountMonth = null;
+        selectedAccountIdx = -1;
         const now = new Date();
         const currentKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
         if (accountRows) accountRows.innerHTML = buildAccountRowsHtml(currentKey);
+        saveAppData();
         renderAccounts();
       }
     });
@@ -7973,11 +8081,36 @@
     // 左侧卡片点击选中
     if (accountCardItems) {
       accountCardItems.addEventListener('click', (event) => {
+        // 返回本月按钮
+        const backBtn = event.target.closest('#backToCurrentMonth');
+        if (backBtn) {
+          activeAccountMonth = null;
+          selectedAccountIdx = -1;
+          saveAppData();
+          renderAccounts();
+          return;
+        }
+        // 历史月份汇总卡片
+        const monthCard = event.target.closest('.account-card-month-summary');
+        if (monthCard) {
+          const monthKey = monthCard.dataset.monthKey;
+          if (monthKey) {
+            activeAccountMonth = monthKey;
+            selectedAccountIdx = -1;
+            saveAppData();
+            renderAccounts();
+          }
+          return;
+        }
+        // 普通记录卡片
         const card = event.target.closest('.account-card-item');
         if (!card) return;
-        selectedAccountIdx = Number(card.dataset.index);
-        saveAppData();
-        renderAccounts();
+        // 月份列表中的记录项（右侧点击选中）
+        if (card.dataset.index !== undefined) {
+          selectedAccountIdx = Number(card.dataset.index);
+          saveAppData();
+          renderAccounts();
+        }
       });
 
       // 长按拖拽排序
@@ -8085,6 +8218,17 @@
       });
       // 删除按钮
       accountDetailContent.addEventListener('click', (event) => {
+        // 月份列表中点击记录项
+        const monthItem = event.target.closest('.account-detail-month-item');
+        if (monthItem) {
+          const idx = Number(monthItem.dataset.index);
+          if (!isNaN(idx) && accounts[idx]) {
+            selectedAccountIdx = idx;
+            saveAppData();
+            renderAccounts();
+          }
+          return;
+        }
         const btn = event.target.closest('.account-detail-delete-btn');
         if (!btn) return;
         const idx = Number(btn.dataset.index);

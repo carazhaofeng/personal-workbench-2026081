@@ -7966,8 +7966,8 @@
         showToast('已删除该条记录');
       });
     }
-    accountRows.addEventListener('click', handleAccountDelete);
-    focusAccountRows.addEventListener('click', handleAccountDelete);
+    if (accountRows) accountRows.addEventListener('click', handleAccountDelete);
+    if (focusAccountRows) focusAccountRows.addEventListener('click', handleAccountDelete);
 
     // ===== 新版卡片列表事件 =====
     // 左侧卡片点击选中

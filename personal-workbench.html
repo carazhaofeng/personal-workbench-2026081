@@ -978,8 +978,8 @@
     }
     .accounting-layout {
       height: 100%;
-      display: grid;
-      grid-template-rows: minmax(0, 1fr) auto;
+      display: flex;
+      flex-direction: column;
       gap: 6px;
       overflow: hidden;
       min-height: 0;
@@ -991,31 +991,328 @@
       margin-bottom: 5px;
       font-size: 0.78rem;
     }
-    .accounting-layout .table-wrap {
-      max-height: 112px;
-    }
-    .accounting-layout table {
-      font-size: 0.78rem;
-    }
-    .accounting-layout th,
-    .accounting-layout td {
-      padding: 4px 5px;
-    }
-    .accounting-top-split {
+
+    /* ===== 左右分栏布局 ===== */
+    .accounting-split {
+      flex: 1;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 260px 1fr;
       gap: 8px;
       min-height: 0;
       overflow: hidden;
     }
-    .accounting-top-split .input-log-card {
-      max-height: none;
-      height: 100%;
-      padding: 7px;
+
+    /* ===== 左侧卡片列表 ===== */
+    .account-card-list {
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      border: 1px solid #c0c0c0;
+      border-radius: 0;
+      overflow: hidden;
+      min-height: 0;
+      position: relative;
     }
-    .accounting-top-split .input-log-card h3 {
-      margin-bottom: 5px;
+    .account-card-list-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 8px;
+      background: #e8e8e8;
+      border-bottom: 2px solid #c0c0c0;
+      flex-shrink: 0;
+    }
+    .account-add-btn {
+      width: 28px;
+      height: 28px;
+      border: 1px solid #4a7a32;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #4a7a32;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .15s ease;
+    }
+    .account-add-btn:hover {
+      background: #4a7a32;
+      color: #ffffff;
+    }
+    .account-trash-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: background .15s ease;
+      position: relative;
+    }
+    .account-trash-btn:hover { background: #e0e0e0; }
+    .account-trash-btn.has-items::after {
+      content: attr(data-count);
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      background: #c84a3a;
+      color: #ffffff;
+      font-size: 0.55rem;
+      border-radius: 8px;
+      padding: 1px 5px;
+      min-width: 14px;
+      text-align: center;
+    }
+    .account-card-items {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 4px;
+    }
+    .account-card-item {
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      border: 1px solid #d4d4d4;
+      border-radius: 4px;
+      background: #ffffff;
+      cursor: pointer;
+      transition: all .15s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .account-card-item:hover {
+      border-color: #7a9a56;
+      background: #f8fcf4;
+    }
+    .account-card-item.active {
+      border-color: #4a7a32;
+      background: #e8f0da;
+      box-shadow: 0 0 0 1px #4a7a32 inset;
+    }
+    .account-card-item.dragging {
+      opacity: 0.5;
+      border-style: dashed;
+    }
+    .account-card-item.drag-over {
+      border-top: 3px solid #4a7a32;
+    }
+    .account-card-date {
+      font-size: 0.7rem;
+      color: #5a6b48;
+      margin-bottom: 2px;
+    }
+    .account-card-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .account-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 3px;
+      font-size: 0.7rem;
+    }
+    .account-card-amount {
+      color: #4a7a32;
+      font-weight: 700;
+    }
+    .account-card-platform {
+      color: #5a6b48;
+      background: #f0f4e8;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 0.65rem;
+    }
+    .account-card-drag-handle {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #c0c0c0;
+      font-size: 0.7rem;
+      cursor: grab;
+      opacity: 0;
+      transition: opacity .15s ease;
+    }
+    .account-card-item:hover .account-card-drag-handle { opacity: 0.6; }
+
+    /* ===== 回收站面板 ===== */
+    .account-trash-panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-height: 60%;
+      background: #ffffff;
+      border-top: 2px solid #c0c0c0;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+    }
+    .account-trash-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: #e8e8e8;
+      border-bottom: 1px solid #c0c0c0;
       font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .account-trash-close {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #5a6b48;
+    }
+    .account-trash-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    .account-trash-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 0.75rem;
+    }
+    .account-trash-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .account-trash-item-title {
+      font-weight: 600;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .account-trash-item-meta {
+      font-size: 0.68rem;
+      color: #5a6b48;
+    }
+    .account-restore-btn {
+      border: 1px solid #4a7a32;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #4a7a32;
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      white-space: nowrap;
+      transition: all .15s ease;
+    }
+    .account-restore-btn:hover {
+      background: #4a7a32;
+      color: #ffffff;
+    }
+
+    /* ===== 右侧内容面板 ===== */
+    .account-detail-panel {
+      background: #ffffff;
+      border: 1px solid #c0c0c0;
+      border-radius: 0;
+      overflow: hidden;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .account-detail-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+    .account-detail-row {
+      display: grid;
+      grid-template-columns: 100px 1fr auto;
+      align-items: center;
+      border-bottom: 1px solid #e0e0e0;
+      min-height: 42px;
+      transition: background .15s ease;
+    }
+    .account-detail-row:hover {
+      background: #f8fcf4;
+    }
+    .account-detail-row:last-child { border-bottom: none; }
+    .account-detail-label {
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #5a6b48;
+      background: #f0f4e8;
+      border-right: 1px solid #e0e0e0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+    .account-detail-value {
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: text;
+      min-width: 0;
+    }
+    .account-detail-value[contenteditable="true"]:focus {
+      outline: 2px solid #4a7a32;
+      outline-offset: -2px;
+      background: #f0f7e8;
+      white-space: normal;
+    }
+    .account-detail-delete {
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+    }
+    .account-detail-delete-btn {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #c0c0c0;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all .15s ease;
+    }
+    .account-detail-delete-btn:hover {
+      color: #c84a3a;
+      background: #fde0e0;
+    }
+    .account-detail-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #999;
+      font-size: 0.85rem;
+    }
+    .account-detail-header {
+      padding: 8px 12px;
+      background: #e8e8e8;
+      border-bottom: 2px solid #c0c0c0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .account-detail-total {
+      font-size: 0.75rem;
+      color: #4a7a32;
+      font-weight: 700;
     }
     .accounting-month-bar {
       display: flex;
@@ -3076,19 +3373,45 @@
       .accounting-page-wrap { height: auto; overflow: visible; }
       .accounting-layout {
         height: auto;
-        grid-template-rows: auto auto;
+        flex-direction: column;
         overflow: visible;
       }
-      .accounting-top-split {
+      /* 移动端：左右改为上下布局 */
+      .accounting-split {
         grid-template-columns: 1fr;
+        grid-template-rows: 280px 1fr;
         overflow: visible;
       }
-      .accounting-layout .table-wrap { max-height: none; }
-      .accounting-layout table,
-      .accounting-layout th,
-      .accounting-layout td {
-        font-size: 0.7rem;
-        padding: 3px 4px;
+      .account-card-list {
+        max-height: 280px;
+      }
+      .account-card-items {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 6px;
+        gap: 6px;
+      }
+      .account-card-item {
+        flex: 0 0 140px;
+        margin-bottom: 0;
+      }
+      .account-detail-row {
+        grid-template-columns: 80px 1fr auto;
+      }
+      .account-detail-label {
+        font-size: 0.68rem;
+        padding: 4px 6px;
+      }
+      .account-detail-value {
+        font-size: 0.78rem;
+        padding: 4px 8px;
+        white-space: normal;
+        word-break: break-word;
+      }
+      .account-trash-panel {
+        max-height: 50%;
       }
       /* 移动端表格允许换行 */
       .accounting-layout td {
@@ -3404,42 +3727,37 @@
           <div class="accounting-layout">
             <div class="accounting-month-bar" id="accountingMonthBar"></div>
             <div class="accounting-month-detail" id="accountingMonthDetail"></div>
-            <div class="accounting-top-split">
-              <article class="card accounting-input-card">
-                <h3>快速记账输入</h3>
-                <div class="voice-input-wrap">
-                  <textarea id="quickAccountInput" placeholder="例如：我今天在拼多多用7.9买了20条观背清江鱼，寄到视高的&#10;按 Enter 换行继续输入，Ctrl+Enter 记账"></textarea>
-                  <button class="voice-btn" data-target="quickAccountInput" title="语音输入">😃</button>
+            <div class="accounting-split">
+              <!-- 左侧：卡片列表 -->
+              <aside class="account-card-list" id="accountCardList">
+                <div class="account-card-list-header">
+                  <button class="account-add-btn" id="accountAddBtn" title="新建消费记录">＋</button>
+                  <button class="account-trash-btn" id="accountTrashBtn" title="回收站">🗑</button>
                 </div>
-                <div class="input-hint">Enter 换行 | Ctrl+Enter 记账</div>
-                <button class="soft-button" id="quickAccountBtn">AI 记账</button>
-              </article>
-
-              <article class="card input-log-card">
-                <h3>历史输入</h3>
-                <div class="input-log-list" id="accountingInputLog"></div>
-              </article>
+                <div class="account-card-items" id="accountCardItems"></div>
+                <!-- 回收站面板 -->
+                <div class="account-trash-panel" id="accountTrashPanel" style="display:none;">
+                  <div class="account-trash-header">
+                    <span>回收站</span>
+                    <button class="account-trash-close" id="accountTrashClose">✕</button>
+                  </div>
+                  <div class="account-trash-items" id="accountTrashItems"></div>
+                </div>
+              </aside>
+              <!-- 右侧：内容显示 -->
+              <section class="account-detail-panel" id="accountDetailPanel">
+                <div class="account-detail-content" id="accountDetailContent"></div>
+              </section>
             </div>
-
-            <article class="card excel-card">
-              <h3>生活记账表格</h3>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>日期</th>
-                      <th>购物平台</th>
-                      <th>商品</th>
-                      <th>用途</th>
-                      <th>目的</th>
-                      <th>金额</th>
-                      <th>备注</th>
-                      <th>操作</th>
-                    </tr>
-                  </thead>
-                  <tbody id="accountRows"></tbody>
-                </table>
+            <!-- 保留原输入区 -->
+            <article class="card accounting-input-card" style="display:none;">
+              <h3>快速记账输入</h3>
+              <div class="voice-input-wrap">
+                <textarea id="quickAccountInput" placeholder="例如：我今天在拼多多用7.9买了20条观背清江鱼，寄到视高的&#10;按 Enter 换行继续输入，Ctrl+Enter 记账"></textarea>
+                <button class="voice-btn" data-target="quickAccountInput" title="语音输入">😃</button>
               </div>
+              <div class="input-hint">Enter 换行 | Ctrl+Enter 记账</div>
+              <button class="soft-button" id="quickAccountBtn">AI 记账</button>
             </article>
           </div>
           </div>
@@ -3883,7 +4201,7 @@
         }
         migratePickupLocations();
         window.localStorage.setItem(APP_DATA_STORAGE_KEY, JSON.stringify({
-          accounts, pendingDeliveries, receivedDeliveries, pickupList, monthlyInputRecords,
+          accounts, accountTrash, selectedAccountIdx, pendingDeliveries, receivedDeliveries, pickupList, monthlyInputRecords,
           workItems, memoItems, longtermNotes, longtermTrash
         }));
         renderAll();
@@ -3951,7 +4269,7 @@
 
     const pageMeta = {
       home: ['首页', '只显示特殊日期提醒、今天生成的句子和工作重要节点。'],
-      accounting: ['生活记账', '输入大段文字后，点击“点击AI整理”才会自动整理到表格。'],
+      accounting: ['生活记账', '左侧卡片列表点击查看详情，右侧横排显示各项内容，双击编辑，✕删除到回收站可恢复，＋新建卡片，长按拖动排序。'],
       finance: ['家庭理财', '默认加密，点击眼睛显示，5 秒无操作后自动加密。'],
       reminders: ['提醒', '生活和工作待办分左右显示，按日期排序，可完成或删除。'],
       longterm: ['长期记录', '横向保存长期笔记标题，点击标题后编辑详细内容。'],
@@ -3997,6 +4315,8 @@
       { date: '7月30日', platform: '拼多多', item: '螺丝贴12个大号', usage: '日常生活', purpose: '生活必须', amount: '16.74', flow: '支出', note: '真实输入：拼多多购物' },
       { date: '7月30日', platform: '淘宝', item: '纯棉布料', usage: '日常生活', purpose: '生活必须', amount: '25.5', flow: '支出', note: '真实输入：淘宝购物' }
     ];
+    let accountTrash = []; // 回收站：删除的记账记录
+    let selectedAccountIdx = 0; // 当前选中的卡片索引
 
     let pendingDeliveries = [
       { date: '7月29日', platform: '抖音', item: '两匹布', location: '视高', amount: '50', received: false },
@@ -4015,6 +4335,8 @@
     function saveAppData() {
       const data = {
         accounts,
+        accountTrash,
+        selectedAccountIdx,
         pendingDeliveries,
         receivedDeliveries,
         pickupList,
@@ -4047,6 +4369,8 @@
         if (Array.isArray(data.receivedDeliveries)) receivedDeliveries = data.receivedDeliveries;
         if (Array.isArray(data.pickupList)) pickupList = data.pickupList;
         if (Array.isArray(data.monthlyInputRecords)) monthlyInputRecords = data.monthlyInputRecords;
+        if (Array.isArray(data.accountTrash)) accountTrash = data.accountTrash;
+        if (typeof data.selectedAccountIdx === 'number') selectedAccountIdx = data.selectedAccountIdx;
         if (Array.isArray(data.workItems)) {
           workItems.splice(0, workItems.length, ...data.workItems.map(item => ({ ...item, done: Boolean(item.done), completedAt: item.completedAt || '' })));
         }
@@ -4170,6 +4494,13 @@
     const homeQuickBtn = document.getElementById('homeQuickBtn');
     const accountRows = document.getElementById('accountRows');
     const focusAccountRows = document.getElementById('focusAccountRows');
+    const accountCardItems = document.getElementById('accountCardItems');
+    const accountDetailContent = document.getElementById('accountDetailContent');
+    const accountAddBtn = document.getElementById('accountAddBtn');
+    const accountTrashBtn = document.getElementById('accountTrashBtn');
+    const accountTrashPanel = document.getElementById('accountTrashPanel');
+    const accountTrashClose = document.getElementById('accountTrashClose');
+    const accountTrashItems = document.getElementById('accountTrashItems');
     const focusMonthlyInputLog = document.getElementById('focusMonthlyInputLog');
     const quickAccountBtn = document.getElementById('quickAccountBtn');
     const tableFocusView = document.getElementById('tableFocusView');
@@ -4938,12 +5269,164 @@
     }
 
     function renderAccounts() {
+      // 兼容旧表格（focus视图等）
       const html = buildAccountRowsHtml();
-      accountRows.innerHTML = html;
-      focusAccountRows.innerHTML = html;
+      if (accountRows) accountRows.innerHTML = html;
+      if (focusAccountRows) focusAccountRows.innerHTML = html;
       renderMonthBar();
       renderMonthDetail();
       renderHomeMonthSpend();
+      // 新：渲染卡片列表和详情
+      renderAccountCardList();
+      renderAccountDetail();
+      updateTrashBtn();
+    }
+
+    // ===== 渲染左侧卡片列表 =====
+    function renderAccountCardList() {
+      if (!accountCardItems) return;
+      if (!accounts.length) {
+        accountCardItems.innerHTML = '<div style="text-align:center;color:#999;padding:20px 0;font-size:0.8rem;">暂无消费记录<br>点击 ＋ 新建</div>';
+        return;
+      }
+      // 倒序显示（最新在上）
+      const sorted = accounts.map((row, idx) => ({ row, idx })).reverse();
+      accountCardItems.innerHTML = sorted.map(({ row, idx }) => {
+        const holiday = getHolidayInfo(row.date);
+        const dateDisplay = holiday ? `${row.date}(${holiday})` : row.date;
+        const isActive = idx === selectedAccountIdx;
+        return `<div class="account-card-item ${isActive ? 'active' : ''}" data-index="${idx}">
+          <div class="account-card-date">${dateDisplay || '无日期'}</div>
+          <div class="account-card-title">${escapeHtml(row.item || '未命名')}</div>
+          <div class="account-card-meta">
+            <span class="account-card-amount">¥${row.amount || '0'}</span>
+            ${row.platform ? `<span class="account-card-platform">${escapeHtml(row.platform)}</span>` : ''}
+          </div>
+          <span class="account-card-drag-handle" title="长按拖动排序">⋮⋮</span>
+        </div>`;
+      }).join('');
+    }
+
+    // ===== 渲染右侧详情 =====
+    function renderAccountDetail() {
+      if (!accountDetailContent) return;
+      if (selectedAccountIdx < 0 || selectedAccountIdx >= accounts.length) {
+        accountDetailContent.innerHTML = '<div class="account-detail-empty">请在左侧选择一条记录</div>';
+        return;
+      }
+      const row = accounts[selectedAccountIdx];
+      const fields = [
+        { key: 'date', label: '日期' },
+        { key: 'platform', label: '购物平台' },
+        { key: 'item', label: '商品' },
+        { key: 'usage', label: '用途' },
+        { key: 'purpose', label: '目的' },
+        { key: 'amount', label: '金额' },
+        { key: 'note', label: '备注' },
+      ];
+      const total = accounts.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+      const header = `<div class="account-detail-header">
+        <span>${escapeHtml(row.item || '未命名')} — ${escapeHtml(row.date || '无日期')}</span>
+        <span class="account-detail-total">本月合计：¥${total.toFixed(2)}</span>
+      </div>`;
+      const rows = fields.map(f => {
+        const val = row[f.key] || '';
+        return `<div class="account-detail-row">
+          <div class="account-detail-label">${f.label}</div>
+          <div class="account-detail-value" contenteditable="true" data-index="${selectedAccountIdx}" data-field="${f.key}">${escapeHtml(val)}</div>
+          <div class="account-detail-delete"><button class="account-detail-delete-btn" data-index="${selectedAccountIdx}" title="删除此条">✕</button></div>
+        </div>`;
+      }).join('');
+      accountDetailContent.innerHTML = header + rows;
+    }
+
+    // ===== 更新回收站按钮状态 =====
+    function updateTrashBtn() {
+      if (!accountTrashBtn) return;
+      const count = accountTrash.length;
+      if (count > 0) {
+        accountTrashBtn.classList.add('has-items');
+        accountTrashBtn.setAttribute('data-count', String(count));
+        accountTrashBtn.title = `回收站：${count} 条已删除记录`;
+      } else {
+        accountTrashBtn.classList.remove('has-items');
+        accountTrashBtn.removeAttribute('data-count');
+        accountTrashBtn.title = '回收站';
+      }
+    }
+
+    // ===== 渲染回收站列表 =====
+    function renderAccountTrash() {
+      if (!accountTrashItems) return;
+      if (!accountTrash.length) {
+        accountTrashItems.innerHTML = '<div style="text-align:center;color:#999;padding:12px 0;font-size:0.78rem;">回收站为空</div>';
+        return;
+      }
+      accountTrashItems.innerHTML = accountTrash.map((item, idx) => {
+        return `<div class="account-trash-item">
+          <div class="account-trash-item-info">
+            <div class="account-trash-item-title">${escapeHtml(item.item || '未命名')} — ¥${item.amount || '0'}</div>
+            <div class="account-trash-item-meta">${escapeHtml(item.date || '无日期')} · ${escapeHtml(item.platform || '')} · 删除于 ${item.deletedAt || ''}</div>
+          </div>
+          <button class="account-restore-btn" data-trash-idx="${idx}" title="恢复此条记录">↩ 恢复</button>
+        </div>`;
+      }).join('');
+    }
+
+    // ===== 从右侧详情更新单元格 =====
+    function updateAccountFromDetail(cell) {
+      const index = Number(cell.dataset.index);
+      const field = cell.dataset.field;
+      if (!accounts[index] || !field) return;
+      let value = cell.textContent.trim();
+      if (field === 'amount') value = value.replace(/[¥,\s]/g, '');
+      accounts[index][field] = value;
+      if (field === 'amount' || field === 'date' || field === 'flow') renderHomeMonthSpend();
+      saveAppData();
+      // 更新左侧卡片标题
+      renderAccountCardList();
+    }
+
+    // ===== 删除记账记录到回收站 =====
+    function deleteAccountToTrash(index) {
+      if (index < 0 || index >= accounts.length) return;
+      const item = { ...accounts[index], deletedAt: new Date().toLocaleString('zh-CN') };
+      accountTrash.push(item);
+      accounts.splice(index, 1);
+      if (selectedAccountIdx >= accounts.length) selectedAccountIdx = accounts.length - 1;
+      saveAppData();
+      renderAccounts();
+      showToast('已移入回收站');
+    }
+
+    // ===== 从回收站恢复 =====
+    function restoreAccountFromTrash(trashIdx) {
+      if (trashIdx < 0 || trashIdx >= accountTrash.length) return;
+      const item = accountTrash[trashIdx];
+      delete item.deletedAt;
+      accounts.push(item);
+      accountTrash.splice(trashIdx, 1);
+      selectedAccountIdx = accounts.length - 1;
+      saveAppData();
+      renderAccounts();
+      renderAccountTrash();
+      showToast('已恢复');
+    }
+
+    // ===== 新建消费记录 =====
+    function createNewAccountCard() {
+      const now = new Date();
+      const dateStr = `${now.getMonth() + 1}月${now.getDate()}日`;
+      const newRow = { date: dateStr, platform: '', item: '新记录', usage: '', purpose: '', amount: '', flow: '支出', note: '' };
+      accounts.push(newRow);
+      selectedAccountIdx = accounts.length - 1;
+      saveAppData();
+      renderAccounts();
+      // 自动聚焦到右侧第一个可编辑字段
+      setTimeout(() => {
+        const firstInput = accountDetailContent && accountDetailContent.querySelector('.account-detail-value[contenteditable="true"]');
+        if (firstInput) firstInput.focus();
+      }, 100);
     }
 
     function updateAccountFromCell(cell) {
@@ -5513,7 +5996,10 @@
 
       newRows.forEach(row => {
         const exists = accounts.some(old => old.platform === row.platform && old.amount === row.amount && old.date === row.date && old.item === row.item);
-        if (!exists) accounts.push(row);
+        if (!exists) {
+          accounts.push(row);
+          selectedAccountIdx = accounts.length - 1;
+        }
       });
 
       newDeliveries.forEach(d => {
@@ -6892,7 +7378,7 @@
           activeAccountMonth = null;
         } else {
           activeAccountMonth = monthKey;
-          accountRows.innerHTML = buildAccountRowsHtml(monthKey);
+          if (accountRows) accountRows.innerHTML = buildAccountRowsHtml(monthKey);
         }
         renderAccounts();
       });
@@ -6900,7 +7386,7 @@
         const chip = event.target.closest('.month-chip');
         if (!chip) return;
         const monthKey = chip.dataset.month;
-        accountRows.innerHTML = buildAccountRowsHtml(monthKey);
+        if (accountRows) accountRows.innerHTML = buildAccountRowsHtml(monthKey);
         document.querySelectorAll('.month-chip').forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
       });
@@ -6910,7 +7396,7 @@
         activeAccountMonth = null;
         const now = new Date();
         const currentKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
-        accountRows.innerHTML = buildAccountRowsHtml(currentKey);
+        if (accountRows) accountRows.innerHTML = buildAccountRowsHtml(currentKey);
         renderAccounts();
       }
     });
@@ -6956,6 +7442,156 @@
     }
     accountRows.addEventListener('click', handleAccountDelete);
     focusAccountRows.addEventListener('click', handleAccountDelete);
+
+    // ===== 新版卡片列表事件 =====
+    // 左侧卡片点击选中
+    if (accountCardItems) {
+      accountCardItems.addEventListener('click', (event) => {
+        const card = event.target.closest('.account-card-item');
+        if (!card) return;
+        selectedAccountIdx = Number(card.dataset.index);
+        saveAppData();
+        renderAccounts();
+      });
+
+      // 长按拖拽排序
+      let dragSrcIdx = null;
+      let dragSrcEl = null;
+      let pressTimer = null;
+
+      accountCardItems.addEventListener('mousedown', (event) => {
+        const card = event.target.closest('.account-card-item');
+        if (!card) return;
+        // 排除拖拽手柄区域不触发长按
+        if (event.target.classList.contains('account-card-drag-handle')) {
+          startDrag(event, card);
+          return;
+        }
+        // 长按500ms触发拖拽
+        pressTimer = setTimeout(() => {
+          startDrag(event, card);
+        }, 500);
+      });
+      accountCardItems.addEventListener('mouseup', () => { clearTimeout(pressTimer); });
+      accountCardItems.addEventListener('mouseleave', () => { clearTimeout(pressTimer); });
+
+      function startDrag(event, card) {
+        event.preventDefault();
+        dragSrcIdx = Number(card.dataset.index);
+        dragSrcEl = card;
+        card.classList.add('dragging');
+        // 创建触摸事件支持
+        const onMove = (e) => {
+          const touch = e.touches ? e.touches[0] : e;
+          const target = document.elementFromPoint(touch.clientX, touch.clientY);
+          // 移除所有 drag-over
+          accountCardItems.querySelectorAll('.account-card-item').forEach(c => c.classList.remove('drag-over'));
+          const overCard = target && target.closest('.account-card-item');
+          if (overCard && overCard !== dragSrcEl) {
+            overCard.classList.add('drag-over');
+          }
+        };
+        const onEnd = (e) => {
+          const touch = e.changedTouches ? e.changedTouches[0] : e;
+          const target = document.elementFromPoint(touch.clientX, touch.clientY);
+          const overCard = target && target.closest('.account-card-item');
+          if (overCard && overCard !== dragSrcEl) {
+            const targetIdx = Number(overCard.dataset.index);
+            if (dragSrcIdx !== null && dragSrcIdx !== targetIdx) {
+              // 交换位置
+              const item = accounts.splice(dragSrcIdx, 1)[0];
+              accounts.splice(targetIdx, 0, item);
+              selectedAccountIdx = targetIdx;
+              saveAppData();
+              renderAccounts();
+            }
+          }
+          if (dragSrcEl) dragSrcEl.classList.remove('dragging');
+          accountCardItems.querySelectorAll('.account-card-item').forEach(c => c.classList.remove('drag-over'));
+          dragSrcIdx = null;
+          dragSrcEl = null;
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onEnd);
+          document.removeEventListener('touchmove', onMove);
+          document.removeEventListener('touchend', onEnd);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onEnd);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onEnd);
+      }
+    }
+
+    // 右侧详情编辑事件
+    if (accountDetailContent) {
+      accountDetailContent.addEventListener('input', (event) => {
+        const cell = event.target.closest('.account-detail-value[contenteditable="true"]');
+        if (cell) updateAccountFromDetail(cell);
+      });
+      accountDetailContent.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          event.target.blur();
+        }
+        // Ctrl+S 保存
+        if (event.ctrlKey && event.key === 's') {
+          event.preventDefault();
+          event.target.blur();
+          showToast('已保存');
+        }
+      });
+      accountDetailContent.addEventListener('blur', (event) => {
+        const cell = event.target.closest('.account-detail-value[contenteditable="true"]');
+        if (cell) updateAccountFromDetail(cell);
+      }, true);
+      // 双击编辑（contenteditable 默认支持，但确保聚焦）
+      accountDetailContent.addEventListener('dblclick', (event) => {
+        const cell = event.target.closest('.account-detail-value[contenteditable="true"]');
+        if (cell) {
+          cell.focus();
+          // 选中全部文本
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      });
+      // 删除按钮
+      accountDetailContent.addEventListener('click', (event) => {
+        const btn = event.target.closest('.account-detail-delete-btn');
+        if (!btn) return;
+        const idx = Number(btn.dataset.index);
+        deleteAccountToTrash(idx);
+      });
+    }
+
+    // 新建按钮
+    if (accountAddBtn) {
+      accountAddBtn.addEventListener('click', createNewAccountCard);
+    }
+
+    // 回收站按钮
+    if (accountTrashBtn) {
+      accountTrashBtn.addEventListener('click', () => {
+        renderAccountTrash();
+        accountTrashPanel.style.display = accountTrashPanel.style.display === 'none' ? 'flex' : 'none';
+      });
+    }
+    if (accountTrashClose) {
+      accountTrashClose.addEventListener('click', () => {
+        accountTrashPanel.style.display = 'none';
+      });
+    }
+    // 回收站恢复按钮
+    if (accountTrashItems) {
+      accountTrashItems.addEventListener('click', (event) => {
+        const btn = event.target.closest('.account-restore-btn');
+        if (!btn) return;
+        const idx = Number(btn.dataset.trashIdx);
+        restoreAccountFromTrash(idx);
+      });
+    }
 
     // 历史输入记录双击编辑
     function handleInputLogDblClick(event) {

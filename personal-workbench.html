@@ -858,7 +858,7 @@
       overflow-x: hidden;
       overflow-y: hidden;
       max-height: none;
-      border: 1px solid #d0d7de;
+      border: 1px solid #c0c0c0;
       border-radius: 0;
       background: #ffffff;
     }
@@ -869,26 +869,56 @@
       table-layout: fixed;
       font-size: 0.78rem;
       background: #ffffff;
+      border: 1px solid #c0c0c0;
     }
     th, td {
-      padding: 5px 6px;
-      border: 1px solid #d0d7de;
+      padding: 4px 8px;
+      border: 1px solid #d4d4d4;
       text-align: left;
-      vertical-align: top;
+      vertical-align: middle;
       background: #ffffff;
-      color: #24292f;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-word;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.78rem;
+      line-height: 1.6;
+    }
+    th {
+      color: #1a1a1a;
+      background: #e8e8e8;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      text-align: center;
+      border-bottom: 2px solid #c0c0c0;
+      border-right: 1px solid #c0c0c0;
+      font-size: 0.75rem;
+      padding: 5px 6px;
+      letter-spacing: 0.3px;
+    }
+    td {
+      border-right: 1px solid #d4d4d4;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    tbody tr:nth-child(even) {
+      background: #f5f7f0;
+    }
+    tbody tr:nth-child(even) td {
+      background: #f5f7f0;
+    }
+    tbody tr:hover td {
+      background: #e8f0da !important;
     }
     th:nth-child(1), td:nth-child(1) { width: 9%; }
     th:nth-child(2), td:nth-child(2) { width: 10%; }
     th:nth-child(3), td:nth-child(3) { width: 14%; }
     th:nth-child(4), td:nth-child(4) { width: 15%; }
     th:nth-child(5), td:nth-child(5) { width: 14%; }
-    th:nth-child(6), td:nth-child(6) { width: 8%; }
+    th:nth-child(6), td:nth-child(6) { width: 8%; text-align: right; }
     th:nth-child(7), td:nth-child(7) { width: 26%; }
-    th:nth-child(8), td:nth-child(8) { width: 6%; min-width: 40px; }
+    th:nth-child(8), td:nth-child(8) { width: 6%; min-width: 40px; text-align: center; }
     .action-cell {
       text-align: center;
       padding: 4px 2px !important;
@@ -899,36 +929,40 @@
       cursor: pointer;
       font-size: 0.9rem;
       padding: 4px 6px;
-      border-radius: 6px;
+      border-radius: 4px;
       transition: background .15s ease;
     }
     .row-delete-btn:hover {
-      background: #fee;
+      background: #fde0e0;
     }
     td[contenteditable="true"] {
       cursor: text;
     }
     td[contenteditable="true"]:focus {
-      outline: 2px solid #f6c85f;
+      outline: 2px solid #4a7a32;
       outline-offset: -2px;
-      background: #fffbea;
+      background: #f0f7e8 !important;
     }
-    th {
-      color: #24292f;
-      background: #ffffff;
-      font-weight: 700;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-    tr:last-child td { border-bottom: 0; }
+    tr:last-child td { border-bottom: 1px solid #d4d4d4; }
     .excel-card {
       background: #ffffff;
-      border-color: #d0d7de;
+      border: 1px solid #c0c0c0;
+      border-radius: 0;
       box-shadow: none;
+      padding: 0;
     }
     .excel-card h3 {
-      color: #24292f;
+      color: #1a1a1a;
+      background: #e8e8e8;
+      margin: 0;
+      padding: 6px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border-bottom: 2px solid #c0c0c0;
+    }
+    .excel-card .table-wrap {
+      border: none;
+      border-radius: 0;
     }
     .accounting-page-wrap {
       height: 100%;
@@ -1030,8 +1064,9 @@
     .month-detail-table-wrap {
       max-height: 380px;
       overflow-y: auto;
-      border: 1px solid var(--rule);
-      border-radius: var(--radius-md);
+      border: 1px solid #c0c0c0;
+      border-radius: 0;
+      background: #ffffff;
     }
     .month-detail-table-wrap table {
       width: 100%;
@@ -1040,17 +1075,28 @@
     }
     .month-detail-table-wrap th,
     .month-detail-table-wrap td {
-      padding: 4px 6px;
-      border-bottom: 1px solid var(--rule);
+      padding: 4px 8px;
+      border: 1px solid #d4d4d4;
       text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .month-detail-table-wrap th {
-      background: var(--surface);
-      font-weight: 600;
-      color: var(--muted);
+      background: #e8e8e8;
+      font-weight: 700;
+      color: #1a1a1a;
       position: sticky;
       top: 0;
-      z-index: 1;
+      z-index: 2;
+      text-align: center;
+      border-bottom: 2px solid #c0c0c0;
+    }
+    .month-detail-table-wrap tbody tr:nth-child(even) td {
+      background: #f5f7f0;
+    }
+    .month-detail-table-wrap tbody tr:hover td {
+      background: #e8f0da;
     }
     .month-detail-summary {
       display: flex;
@@ -3044,6 +3090,11 @@
         font-size: 0.7rem;
         padding: 3px 4px;
       }
+      /* 移动端表格允许换行 */
+      .accounting-layout td {
+        white-space: normal;
+        word-break: break-word;
+      }
 
       /* ===== 表格防溢出 ===== */
       .table-wrap {
@@ -4837,7 +4888,7 @@
             <tbody>${monthRows.map(r => `<tr>
               <td>${r.date}</td><td>${r.platform}</td><td>${r.item}</td>
               <td>${r.usage}</td><td>${r.purpose}</td>
-              <td>¥${r.amount}</td>
+              <td style="text-align:right;">¥${r.amount}</td>
             </tr>`).join('')}</tbody>
           </table></div>`
         : '<div class="delivery-empty">该月暂无记账记录</div>';

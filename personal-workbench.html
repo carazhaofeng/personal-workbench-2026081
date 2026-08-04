@@ -4263,27 +4263,116 @@
 
     function initSupabase() {
       if (typeof supabase === 'undefined' || !supabase.createClient) {
-        console.warn('Supabase SDK 未加载');
+        console.warn('Supabase SDK 未加载，将在DOMContentLoaded后重试');
+        // SDK 可能还在加载中，延迟重试
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => {
+            if (typeof supabase !== 'undefined' && supabase.createClient) {
+              _initSupabaseClient();
+            }
+          });
+        } else {
+          // DOM 已就绪但 SDK 未加载，延迟重试
+          setTimeout(() => {
+            if (typeof supabase !== 'undefined' && supabase.createClient) {
+              _initSupabaseClient();
+            } else {
+              console.error('Supabase SDK 加载失败，请检查网络连接');
+            }
+          }, 1000);
+        }
         return false;
       }
-      _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: {
-          flowType: 'implicit',
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: true
-        }
-      });
-      return true;
+      return _initSupabaseClient();
+    }
+
+    function _initSupabaseClient() {
+      try {
+        _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: {
+            flowType: 'implicit',
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true,
+            storageKey: 'sb-auth-token',
+            storage: window.localStorage
+          }
+        });
+        // 监听认证状态变化（处理自动恢复、OTP回调等）
+        _supabase.auth.onAuthStateChange((event, session) => {
+          console.log('Auth state changed:', event, session ? 'has session' : 'no session');
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            currentUser = session?.user || null;
+            updateAuthUI();
+            if (currentUser && !isSyncing) {
+              syncFromCloud();
+            }
+          } else if (event === 'SIGNED_OUT') {
+            currentUser = null;
+            updateAuthUI();
+          } else if (event === 'INITIAL_SESSION') {
+            // 初始 session 恢复
+            currentUser = session?.user || null;
+            updateAuthUI();
+            if (currentUser && !isSyncing) {
+              syncFromCloud();
+            }
+          }
+        });
+        return true;
+      } catch (e) {
+        console.error('Supabase 初始化失败:', e);
+        return false;
+      }
     }
 
     async function checkAuth() {
-      if (!_supabase) return;
-      const { data: { user } } = await _supabase.auth.getUser();
-      currentUser = user;
-      updateAuthUI();
-      if (user) {
-        await syncFromCloud();
+      if (!_supabase) {
+        console.warn('checkAuth: Supabase 未初始化');
+        return;
+      }
+      try {
+        // 先从本地存储恢复 session（不依赖网络）
+        const { data: sessionData, error: sessionError } = await _supabase.auth.getSession();
+        if (sessionError) {
+          console.warn('getSession error:', sessionError);
+        }
+        if (sessionData?.session) {
+          // 有本地 session，验证用户
+          const { data: { user }, error: userError } = await _supabase.auth.getUser();
+          if (userError) {
+            console.warn('getUser error:', userError);
+            // 可能 token 过期，尝试刷新
+            const { data: refreshData, error: refreshError } = await _supabase.auth.refreshSession();
+            if (refreshError || !refreshData?.session) {
+              console.warn('Token refresh failed, user needs to re-login');
+              currentUser = null;
+              updateAuthUI();
+              return;
+            }
+            currentUser = refreshData.session.user;
+          } else {
+            currentUser = user;
+          }
+          updateAuthUI();
+          if (currentUser) {
+            await syncFromCloud();
+          }
+        } else {
+          // 没有本地 session，检查 URL 中是否有认证回调
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          if (hashParams.has('access_token') || hashParams.has('error')) {
+            // detectSessionInUrl 会自动处理，这里只需要等待 onAuthStateChange
+            console.log('Detected auth callback in URL, waiting for onAuthStateChange...');
+          } else {
+            currentUser = null;
+            updateAuthUI();
+          }
+        }
+      } catch (e) {
+        console.error('checkAuth 异常:', e);
+        currentUser = null;
+        updateAuthUI();
       }
     }
 
@@ -4307,30 +4396,64 @@
       const emailInput = document.getElementById('authEmail');
       const sendBtn = document.getElementById('authSendCodeBtn');
       const hint = document.getElementById('authHint');
+      if (!emailInput || !sendBtn) return;
       const email = emailInput.value.trim();
       if (!email || !email.includes('@')) {
         showToast('请输入有效的邮箱地址');
         return;
       }
-      if (!_supabase) { showToast('服务未初始化'); return; }
-      const { error } = await _supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: window.location.origin + window.location.pathname
-        }
-      });
-      if (error) {
-        showToast('发送失败：' + error.message);
+      if (!_supabase) {
+        showToast('服务未初始化，请刷新页面重试');
+        console.error('sendAuthCode: Supabase 未初始化');
         return;
       }
-      sendBtn.style.display = 'none';
-      if (hint) hint.style.display = 'block';
-      showToast('登录链接已发送到邮箱');
+      // 防止重复点击
+      if (sendBtn.disabled) return;
+      sendBtn.disabled = true;
+      const originalText = sendBtn.textContent;
+      sendBtn.textContent = '发送中...';
+      try {
+        const { error } = await _supabase.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: window.location.origin + window.location.pathname
+          }
+        });
+        if (error) {
+          console.error('signInWithOtp error:', error);
+          showToast('发送失败：' + error.message);
+          sendBtn.disabled = false;
+          sendBtn.textContent = originalText;
+          return;
+        }
+        sendBtn.textContent = '已发送 ✓';
+        if (hint) hint.style.display = 'block';
+        showToast('登录链接已发送到邮箱');
+        // 30秒后恢复按钮
+        setTimeout(() => {
+          sendBtn.disabled = false;
+          sendBtn.textContent = originalText;
+        }, 30000);
+      } catch (e) {
+        console.error('sendAuthCode 异常:', e);
+        showToast('发送异常，请重试：' + (e.message || e));
+        sendBtn.disabled = false;
+        sendBtn.textContent = originalText;
+      }
     }
 
     async function logout() {
-      if (!_supabase) return;
-      await _supabase.auth.signOut();
+      if (!_supabase) {
+        currentUser = null;
+        updateAuthUI();
+        showToast('已退出');
+        return;
+      }
+      try {
+        await _supabase.auth.signOut();
+      } catch (e) {
+        console.error('logout error:', e);
+      }
       currentUser = null;
       updateAuthUI();
       showToast('已退出');
@@ -8348,6 +8471,16 @@
 
     document.getElementById('authSendCodeBtn').addEventListener('click', sendAuthCode);
     document.getElementById('authLogoutBtn').addEventListener('click', logout);
+    // 邮箱输入框支持回车发送
+    const authEmailInput = document.getElementById('authEmail');
+    if (authEmailInput) {
+      authEmailInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendAuthCode();
+        }
+      });
+    }
     const syncBtn = document.getElementById('authSyncBtn');
     if (syncBtn) {
       syncBtn.addEventListener('click', () => {
@@ -8356,8 +8489,16 @@
         }
       });
     }
+    // 初始化 Supabase 并检查登录状态
     if (initSupabase()) {
       checkAuth();
+    } else {
+      // SDK 未就绪时延迟重试 checkAuth
+      setTimeout(() => {
+        if (_supabase) {
+          checkAuth();
+        }
+      }, 1500);
     }
 
     // 页面可见性变化时自动从云端拉取数据

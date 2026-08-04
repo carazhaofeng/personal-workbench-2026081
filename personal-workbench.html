@@ -3786,38 +3786,27 @@
       }
     }
   </style>
-  <!-- 多源 CDN 加载 Supabase SDK（主源 jsdelivr，备源 unpkg） -->
+  <!-- 优先加载本地 Supabase SDK，CDN 作为备用 -->
+  <script src="./supabase-js.min.js"></script>
   <script>
-    // 异步加载 Supabase SDK，支持多源回退
-    (function() {
+    // 如果本地 SDK 加载失败，尝试 CDN 备用源
+    if (typeof supabase === 'undefined' || !supabase.createClient) {
+      console.warn('本地 SDK 加载失败，尝试 CDN 备用源...');
       var cdnSources = [
-        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-        'https://unpkg.com/@supabase/supabase-js@2',
-        'https://cdnjs.cloudflare.com/ajax/libs/supabase-js/2.x/umd/supabase-js.min.js'
+        'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
+        'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js'
       ];
-      var loaded = false;
       function loadScript(url, callback) {
         var s = document.createElement('script');
         s.src = url;
-        s.onload = function() { loaded = true; callback(true); };
+        s.onload = function() { callback(true); };
         s.onerror = function() { console.warn('CDN 加载失败: ' + url); callback(false); };
-        s.async = false; // 保持顺序
         document.head.appendChild(s);
       }
       function tryNext(idx) {
         if (idx >= cdnSources.length) {
-          console.error('所有 CDN 源均加载失败，Supabase SDK 无法加载');
+          console.error('所有 SDK 源均加载失败');
           window._supabaseSdkFailed = true;
-          // 显示加载失败提示
-          document.addEventListener('DOMContentLoaded', function() {
-            var panel = document.getElementById('authLoggedOut');
-            if (panel) {
-              var errDiv = document.createElement('div');
-              errDiv.style.cssText = 'color:#c84a3a;font-size:0.7rem;padding:4px 0;';
-              errDiv.textContent = '⚠ SDK 加载失败，请检查网络或使用VPN后刷新页面';
-              panel.appendChild(errDiv);
-            }
-          });
           return;
         }
         loadScript(cdnSources[idx], function(success) {
@@ -3825,7 +3814,7 @@
         });
       }
       tryNext(0);
-    })();
+    }
   </script>
 </head>
 <body>

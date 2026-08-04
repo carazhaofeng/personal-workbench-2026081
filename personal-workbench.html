@@ -2200,6 +2200,181 @@
     .confirm-dialog-btn.confirm:hover {
       background: #d94d4d;
     }
+    /* ===== 本月输入汇总弹窗 ===== */
+    .input-summary-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9998;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease;
+    }
+    .input-summary-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .input-summary-panel {
+      background: #ffffff;
+      border-radius: 0;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      width: 92%;
+      max-width: 680px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.95);
+      transition: transform .2s ease;
+    }
+    .input-summary-overlay.show .input-summary-panel {
+      transform: scale(1);
+    }
+    .input-summary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      background: #e8e8e8;
+      border-bottom: 2px solid #c0c0c0;
+      flex-shrink: 0;
+    }
+    .input-summary-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+    .input-summary-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .input-summary-close {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      color: #5a6b48;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: background .15s ease;
+    }
+    .input-summary-close:hover { background: #d0d0d0; }
+    .input-summary-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+    .input-summary-section-header {
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #4a7a32;
+      background: #f0f4e8;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .input-summary-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background .15s ease;
+    }
+    .input-summary-item:hover {
+      background: #f8fcf4;
+    }
+    .input-summary-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .input-summary-item-time {
+      font-size: 0.68rem;
+      color: #999;
+      margin-bottom: 2px;
+    }
+    .input-summary-item-text {
+      font-size: 0.82rem;
+      color: #1a1a1a;
+      line-height: 1.5;
+      cursor: text;
+      padding: 2px 4px;
+      border-radius: 3px;
+      word-break: break-word;
+    }
+    .input-summary-item-text[contenteditable="true"]:focus {
+      outline: 2px solid #4a7a32;
+      outline-offset: -2px;
+      background: #f0f7e8;
+    }
+    .input-summary-delete-btn {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #c0c0c0;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: all .15s ease;
+      flex-shrink: 0;
+    }
+    .input-summary-delete-btn:hover {
+      color: #c84a3a;
+      background: #fde0e0;
+    }
+    .input-summary-trash-section {
+      border-top: 2px solid #c0c0c0;
+    }
+    .input-summary-trash-header {
+      padding: 6px 14px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #999;
+      background: #f5f5f5;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .input-summary-trash-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 14px;
+      border-bottom: 1px solid #f0f0f0;
+      opacity: 0.7;
+    }
+    .input-summary-restore-btn {
+      border: 1px solid #4a7a32;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #4a7a32;
+      cursor: pointer;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      white-space: nowrap;
+      transition: all .15s ease;
+      flex-shrink: 0;
+    }
+    .input-summary-restore-btn:hover {
+      background: #4a7a32;
+      color: #ffffff;
+    }
+    .input-summary-empty {
+      text-align: center;
+      color: #999;
+      padding: 20px 0;
+      font-size: 0.82rem;
+    }
+    .input-summary-btn {
+      margin-top: 6px;
+      font-size: 0.78rem;
+    }
     /* ===== 历史输入记录删除按钮 ===== */
     .input-log-item {
       display: flex;
@@ -3682,6 +3857,7 @@
                 <button class="voice-btn" data-target="homeQuickInput" title="语音输入">😃</button>
               </div>
               <button class="soft-button" id="homeQuickBtn">识别并分配</button>
+              <button class="soft-button input-summary-btn" id="inputSummaryBtn" title="查看本月所有输入记录">📋 本月输入</button>
             </article>
             <section class="card home-info-stack">
               <div class="home-info-row">
@@ -4063,6 +4239,20 @@
     </div>
   </div>
 
+  <!-- 本月输入汇总弹窗 -->
+  <div class="input-summary-overlay" id="inputSummaryOverlay">
+    <div class="input-summary-panel">
+      <div class="input-summary-header">
+        <span class="input-summary-title">📋 本月输入汇总</span>
+        <div class="input-summary-actions">
+          <span class="input-summary-refresh" id="inputSummaryRefreshHint" style="font-size:0.68rem;color:#999;"></span>
+          <button class="input-summary-close" id="inputSummaryClose">✕</button>
+        </div>
+      </div>
+      <div class="input-summary-body" id="inputSummaryBody"></div>
+    </div>
+  </div>
+
   <script>
     // ===== Supabase 配置 =====
     const SUPABASE_URL = 'https://ihdiyxifletsvaithlrc.supabase.co';
@@ -4201,7 +4391,7 @@
         }
         migratePickupLocations();
         window.localStorage.setItem(APP_DATA_STORAGE_KEY, JSON.stringify({
-          accounts, accountTrash, selectedAccountIdx, pendingDeliveries, receivedDeliveries, pickupList, monthlyInputRecords,
+          accounts, accountTrash, selectedAccountIdx, pendingDeliveries, receivedDeliveries, pickupList, monthlyInputRecords, inputTrash,
           workItems, memoItems, longtermNotes, longtermTrash
         }));
         renderAll();
@@ -4329,6 +4519,7 @@
 
     // Monthly input records: stores all homepage inputs with timestamps for monthly auto-clear
     let monthlyInputRecords = [];
+    let inputTrash = []; // 输入记录回收站
     const APP_DATA_STORAGE_KEY = 'personalWorkbenchDataV2';
     let activeAccountMonth = null; // null = 仅显示本月，否则为展开的月份 key 如 "2026-7"
 
@@ -4341,6 +4532,7 @@
         receivedDeliveries,
         pickupList,
         monthlyInputRecords,
+        inputTrash,
         workItems,
         memoItems,
         longtermNotes,
@@ -4369,6 +4561,7 @@
         if (Array.isArray(data.receivedDeliveries)) receivedDeliveries = data.receivedDeliveries;
         if (Array.isArray(data.pickupList)) pickupList = data.pickupList;
         if (Array.isArray(data.monthlyInputRecords)) monthlyInputRecords = data.monthlyInputRecords;
+        if (Array.isArray(data.inputTrash)) inputTrash = data.inputTrash;
         if (Array.isArray(data.accountTrash)) accountTrash = data.accountTrash;
         if (typeof data.selectedAccountIdx === 'number') selectedAccountIdx = data.selectedAccountIdx;
         if (Array.isArray(data.workItems)) {
@@ -4492,6 +4685,11 @@
     const refreshQuoteNextBtn = document.getElementById('refreshQuoteNextBtn');
     const homeQuickInput = document.getElementById('homeQuickInput');
     const homeQuickBtn = document.getElementById('homeQuickBtn');
+    const inputSummaryBtn = document.getElementById('inputSummaryBtn');
+    const inputSummaryOverlay = document.getElementById('inputSummaryOverlay');
+    const inputSummaryClose = document.getElementById('inputSummaryClose');
+    const inputSummaryBody = document.getElementById('inputSummaryBody');
+    const inputSummaryRefreshHint = document.getElementById('inputSummaryRefreshHint');
     const accountRows = document.getElementById('accountRows');
     const focusAccountRows = document.getElementById('focusAccountRows');
     const accountCardItems = document.getElementById('accountCardItems');
@@ -5518,6 +5716,147 @@
           ${p.pickupCode ? `<span class="home-pickup-code">${p.pickupCode}</span>` : ''}
         </div>`
       ).join('');
+    }
+
+    // ===== 本月输入汇总弹窗 =====
+    function openInputSummary() {
+      renderInputSummary();
+      inputSummaryOverlay.classList.add('show');
+    }
+    function closeInputSummary() {
+      inputSummaryOverlay.classList.remove('show');
+    }
+
+    function renderInputSummary() {
+      if (!inputSummaryBody) return;
+      const now = new Date();
+      const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+      const currentMonthRecords = monthlyInputRecords.filter(r => r.monthKey === monthKey);
+      // 按时间倒序（最新在上）
+      const sorted = [...currentMonthRecords].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      const sectionNames = { accounting: '生活记账', delivery: '代收快递', work: '提醒', all: '全部' };
+      const sections = ['accounting', 'delivery', 'work'];
+      let html = '';
+
+      sections.forEach(section => {
+        const items = sorted.filter(r => {
+          const s = r.section || 'all';
+          return s === section || s === 'all';
+        });
+        if (!items.length) return;
+        html += `<div class="input-summary-section-header">${sectionNames[section]}</div>`;
+        html += items.map(r => {
+          const time = new Date(r.timestamp);
+          const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+          return `<div class="input-summary-item">
+            <div class="input-summary-item-content">
+              <div class="input-summary-item-time">${timeStr}</div>
+              <div class="input-summary-item-text" contenteditable="true" data-timestamp="${r.timestamp}" title="双击编辑，回车保存">${escapeHtml(r.text)}</div>
+            </div>
+            <button class="input-summary-delete-btn" data-timestamp="${r.timestamp}" title="删除到回收站">✕</button>
+          </div>`;
+        }).join('');
+      });
+
+      if (!html) {
+        html = '<div class="input-summary-empty">本月暂无输入记录</div>';
+      }
+
+      // 回收站部分
+      if (inputTrash.length > 0) {
+        const trashSorted = [...inputTrash].sort((a, b) => new Date(b.deletedAt || b.timestamp) - new Date(a.deletedAt || a.timestamp));
+        html += `<div class="input-summary-trash-section">`;
+        html += `<div class="input-summary-trash-header">🗑 回收站（${inputTrash.length}）</div>`;
+        html += trashSorted.map((item, idx) => {
+          const time = new Date(item.timestamp);
+          const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+          const sectionLabel = sectionNames[item.section || 'all'] || '全部';
+          return `<div class="input-summary-trash-item">
+            <div class="input-summary-item-content">
+              <div class="input-summary-item-time">${timeStr} · ${sectionLabel} · 删除于 ${item.deletedAt || ''}</div>
+              <div class="input-summary-item-text">${escapeHtml(item.text)}</div>
+            </div>
+            <button class="input-summary-restore-btn" data-trash-idx="${idx}" title="恢复此条记录">↩ 恢复</button>
+          </div>`;
+        }).join('');
+        html += `</div>`;
+      }
+
+      inputSummaryBody.innerHTML = html;
+
+      // 更新刷新提示
+      if (inputSummaryRefreshHint) {
+        inputSummaryRefreshHint.textContent = `每10分钟自动刷新 · 上次更新：${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      }
+    }
+
+    // 弹窗内编辑：更新记录
+    function updateInputSummaryRecord(ts, newText) {
+      const record = monthlyInputRecords.find(r => r.timestamp === ts);
+      if (!record) return;
+      record.text = newText;
+      saveAppData();
+      // 重新识别并更新到对应区域
+      reprocessInputRecord(record);
+    }
+
+    // 重新处理输入记录（识别新规则并更新）
+    function reprocessInputRecord(record) {
+      const text = record.text;
+      const section = record.section || 'all';
+      // 根据section调用对应的处理逻辑
+      if (section === 'accounting' || section === 'all') {
+        if (/买|花了|购买|下单|消费|地铁|公交|门店|水电|燃气|费\d|交\d|充值|话费/.test(text)) {
+          aiOrganize(text);
+        }
+      }
+      if (section === 'delivery' || section === 'all') {
+        if (/寄到|寄到了|送到|快递|取货码|取件码|提货码|兔喜|菜鸟|申通|邮政|中通|极兔|欢喵|喵站|自提/.test(text)) {
+          // 快递相关已在aiOrganize中处理
+        }
+      }
+      if (section === 'work' || section === 'all') {
+        if (/工作|考试|ESS|提交|复盘|周报|项目|每周|提醒|备忘|记得|房租|信用卡|缴|交|生日|纪念日/.test(text)) {
+          const date = getDateFromText(text);
+          workItems.push({ date: getWeeklyReminderDate(text) || (date === '无日期' ? (() => { const n = new Date(); return `${n.getMonth() + 1}月${n.getDate()}日`; })() : date), text, done: false });
+          renderWork();
+        }
+      }
+      renderAccounts();
+      renderDeliveries();
+      renderPickupList();
+      renderHomeReminders();
+      renderHomeMonthSpend();
+      saveAppData();
+    }
+
+    // 从弹窗删除到回收站
+    function deleteInputToTrash(ts) {
+      const idx = monthlyInputRecords.findIndex(r => r.timestamp === ts);
+      if (idx < 0) return;
+      const record = { ...monthlyInputRecords[idx], deletedAt: new Date().toLocaleString('zh-CN') };
+      inputTrash.push(record);
+      monthlyInputRecords.splice(idx, 1);
+      saveAppData();
+      renderInputRecords();
+      renderInputSummary();
+      showToast('已移入回收站');
+    }
+
+    // 从回收站恢复
+    function restoreInputFromTrash(trashIdx) {
+      if (trashIdx < 0 || trashIdx >= inputTrash.length) return;
+      const item = inputTrash[trashIdx];
+      delete item.deletedAt;
+      monthlyInputRecords.push(item);
+      inputTrash.splice(trashIdx, 1);
+      saveAppData();
+      renderInputRecords();
+      renderInputSummary();
+      // 重新处理恢复的记录
+      reprocessInputRecord(item);
+      showToast('已恢复');
     }
 
     async function fetchChengduWeather() {
@@ -7739,6 +8078,79 @@
         distributeHomeInput();
       }
     });
+
+    // ===== 本月输入汇总弹窗事件 =====
+    if (inputSummaryBtn) {
+      inputSummaryBtn.addEventListener('click', openInputSummary);
+    }
+    if (inputSummaryClose) {
+      inputSummaryClose.addEventListener('click', closeInputSummary);
+    }
+    if (inputSummaryOverlay) {
+      inputSummaryOverlay.addEventListener('click', (e) => {
+        if (e.target === inputSummaryOverlay) closeInputSummary();
+      });
+    }
+    // 弹窗内事件委托
+    if (inputSummaryBody) {
+      // 双击编辑
+      inputSummaryBody.addEventListener('dblclick', (event) => {
+        const textEl = event.target.closest('.input-summary-item-text[contenteditable="true"]');
+        if (textEl) {
+          textEl.focus();
+          const range = document.createRange();
+          range.selectNodeContents(textEl);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+      });
+      // 编辑保存
+      inputSummaryBody.addEventListener('keydown', (event) => {
+        const textEl = event.target.closest('.input-summary-item-text[contenteditable="true"]');
+        if (!textEl) return;
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          textEl.blur();
+        }
+        if (event.ctrlKey && event.key === 's') {
+          event.preventDefault();
+          textEl.blur();
+          showToast('已保存');
+        }
+      });
+      // 失焦保存
+      inputSummaryBody.addEventListener('blur', (event) => {
+        const textEl = event.target.closest('.input-summary-item-text[contenteditable="true"]');
+        if (textEl) {
+          const ts = textEl.dataset.timestamp;
+          const newText = textEl.textContent.trim();
+          if (ts) updateInputSummaryRecord(ts, newText);
+        }
+      }, true);
+      // 删除按钮
+      inputSummaryBody.addEventListener('click', (event) => {
+        const delBtn = event.target.closest('.input-summary-delete-btn');
+        if (delBtn) {
+          const ts = delBtn.dataset.timestamp;
+          if (ts) deleteInputToTrash(ts);
+          return;
+        }
+        const restoreBtn = event.target.closest('.input-summary-restore-btn');
+        if (restoreBtn) {
+          const idx = Number(restoreBtn.dataset.trashIdx);
+          restoreInputFromTrash(idx);
+        }
+      });
+    }
+
+    // 10分钟自动刷新
+    let inputSummaryRefreshTimer = setInterval(() => {
+      // 只在弹窗打开时刷新
+      if (inputSummaryOverlay && inputSummaryOverlay.classList.contains('show')) {
+        renderInputSummary();
+      }
+    }, 10 * 60 * 1000);
     addLongtermBtn.addEventListener('click', addLongtermNote);
     longtermTitleInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
